@@ -25,6 +25,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(1200px
 #app{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:0 16px}
 h1,h2,h3{font-weight:600;letter-spacing:-.02em}
 button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
 input,select{font-family:inherit;font-size:14px;color:var(--tx);background:var(--card);border:1px solid #3a3128;border-radius:var(--r-sm);padding:12px 14px;width:100%;outline:none}
 input:focus{border-color:var(--gold-dim)}
 img{display:block}
@@ -102,6 +103,12 @@ img{display:block}
 .check{width:26px;height:26px;border-radius:9px;border:1.5px solid #463b30;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;flex:0 0 auto}
 .ep.seen .check,.check.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 
+/* episode thumbs */
+.ep .th{width:58px;height:33px;border-radius:6px;overflow:hidden;background:var(--card2);flex:0 0 auto}
+.ep .th img{width:100%;height:100%;object-fit:cover}
+/* month group header */
+.mgh{font-size:11px;color:var(--gold);margin:18px 2px 8px;letter-spacing:.06em;text-transform:uppercase}
+.viewtg{width:38px;height:38px;border-radius:12px;background:var(--card);border:1px solid #3a3128;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--tx2)}
 /* movies list */
 .mrow{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:var(--r-sm);padding:10px;margin-bottom:10px}
 .mrow .mp{width:52px;height:74px;border-radius:9px;background:var(--card2);overflow:hidden;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--tx3)}
@@ -181,10 +188,12 @@ let S = {
   epRatings:[], movieRatings:{},
   tvm:{},          // tvdbId -> tvmaze show cache {mid,img,fan,status,premiered,genres,network,rating,eps:[{s,e,name,air}],epsAt}
   keys:{tmdb:'',omdb:''},
+  prefs:{movieView:'list',showView:'grid'},
+  tmdbMeta:{},
   tmdbPosters:{},  // movie title -> poster url
   loaded:false
 };
-const save = async ()=>{ for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters']) await DB.set(k,S[k]); };
+const save = async ()=>{ for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters','prefs','tmdbMeta']) await DB.set(k,S[k]); };
 const saveOne = k => DB.set(k,S[k]);
 
 /* ============ helpers ============ */
@@ -219,6 +228,13 @@ function upcomingEp(id){
   return {...up,days};
 }
 const inDays=d=>d<=0?'today':d===1?'tomorrow':`in ${d}d`;
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(ds){if(!ds)return'';const d=new Date(ds);if(isNaN(d))return ds;
+  const days=Math.ceil((d-new Date())/864e5);
+  if(days>=0&&days<=7)return inDays(days);
+  const s=`${MON[d.getMonth()]} ${d.getDate()}`;
+  return d.getFullYear()===new Date().getFullYear()?s:`${s} ${d.getFullYear()}`}
+const daysTo=ds=>Math.ceil((new Date(ds)-new Date())/864e5);
 
 /* ============ TVmaze API ============ */
 const TVM='https://api.tvmaze.com';
@@ -241,12 +257,12 @@ async function tvmEpisodes(mid){
     const r=await fetch(`${TVM}/shows/${mid}/episodes`);
     if(!r.ok) return null;
     const today=new Date().toISOString().slice(0,10);
-    return (await r.json()).map(e=>({s:e.season,e:e.number,name:e.name||'',air:e.airdate||'',future:!!e.airdate&&e.airdate>today}));
+    return (await r.json()).map(e=>({s:e.season,e:e.number,name:e.name||'',air:e.airdate||'',img:e.image?.medium||'',future:!!e.airdate&&e.airdate>today}));
   }catch(e){return null}
 }
 async function ensureEpisodes(id){
   const tv=S.tvm[id]; if(!tv||!tv.mid) return false;
-  if(tv.eps && Date.now()-(tv.epsAt||0) < 86400e3*3) return true;
+  if(tv.eps && tv.eps[0] && tv.eps[0].img!==undefined && Date.now()-(tv.epsAt||0) < 86400e3*3) return true;
   const eps=await tvmEpisodes(tv.mid);
   if(eps){tv.eps=eps;tv.epsAt=Date.now();await saveOne('tvm');return true}
   return !!tv.eps;
@@ -396,7 +412,7 @@ function posterCard(sh){
   const tv=S.tvm[sh.id],img=tv?.img;
   const st=showState(sh);
   const up=upcomingEp(sh.id);
-  const tag=up&&st!=='plan'?`<span class="pill amber tag">ep ${inDays(up.days)}</span>`
+  const tag=up&&st!=='plan'?`<span class="pill amber tag">ep ${fmtDate(up.air)}</span>`
     :st==='completed'?'<span class="pill green tag">✓ done</span>'
     :st==='uptodate'?'<span class="pill gold tag">up to date</span>'
     :tv?.status==='Ended'&&st==='watching'?'<span class="pill red tag">ended</span>':'';
@@ -420,7 +436,7 @@ function vHome(){
     return `<a class="hcard" href="#/show/${s.id}">
       ${tv?.img?`<img loading="lazy" src="${tv.imgBig||tv.img}">`:`<div class="ph">${esc(s.title)}</div>`}
       <div class="ov"><div class="t">${esc(s.title)}</div>
-      <div class="nx">${nx?`next · S${nx.s} E${nx.e}`:(up?`new ep ${inDays(up.days)} · ${up.air}`:tot?'':'&nbsp;')}</div>
+      <div class="nx">${nx?`next · S${nx.s} E${nx.e}`:(up?`new ep ${fmtDate(up.air)}`:tot?'':'&nbsp;')}</div>
       ${tot?`<div class="bar"><i style="width:${Math.min(100,wc/tot*100)}%"></i></div>`:''}</div></a>`;
   }).join('');
   return `<header class="hdr"><div><div class="hi">Hello,</div><div class="name">Abdo</div></div>
@@ -440,12 +456,29 @@ function vShows(){
   F.slice(1).forEach(([k])=>counts[k]=list.filter(s=>showState(s)===k).length);
   if(showFilter!=='all')list=list.filter(s=>showState(s)===showFilter);
   list.sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id))||a.title.localeCompare(b.title));
-  return `<header class="hdr"><div class="name">Shows</div><div class="badge"><b>${list.length}</b></div></header>
+  const grid=S.prefs.showView!=='list';
+  return `<header class="hdr"><div class="name">Shows</div>
+    <button class="viewtg" onclick="setSView('${grid?'list':'grid'}')">${grid?'☰':'▦'}</button></header>
   <div class="chips">${F.map(([k,l])=>`<button class="chip ${showFilter===k?'on':''}" onclick="setFilter('${k}')">${l}${counts[k]!=null?` ${counts[k]}`:''}</button>`).join('')}</div>
   <div style="height:14px"></div>
-  <div class="grid">${list.map(posterCard).join('')||'<div class="empty">No shows here yet.</div>'}</div>`;
+  ${grid?`<div class="grid">${list.map(posterCard).join('')||'<div class="empty">No shows here yet.</div>'}</div>`
+    :(list.map(showRow).join('')||'<div class="empty">No shows here yet.</div>')}`;
 }
 
+window.setSView=v=>{S.prefs.showView=v;saveOne('prefs');render(false)};
+function showRow(sh){
+  const tv=S.tvm[sh.id],wc=watchedCount(sh.id);
+  const tot=tv?.eps?tv.eps.filter(e=>!e.future).length:0;
+  const nx=nextEp(sh.id),up=upcomingEp(sh.id);
+  const sub=[tot?`${wc}/${tot}`:wc?`${wc} eps`:'' ,
+    nx?`next S${nx.s} E${nx.e}`:up?`new ep ${fmtDate(up.air)}`:'',
+    tv?.status==='Ended'?'ended':''].filter(Boolean).join(' · ');
+  return `<a class="mrow" href="#/show/${sh.id}">
+    <div class="mp">${tv?.img?`<img loading="lazy" src="${tv.img}">`:'📺'}</div>
+    <div class="mi"><div class="mt">${esc(sh.title)}${sh.favorite?' ★':''}</div>
+    <div class="ms">${sub}</div></div>
+  </a>`;
+}
 let openSeason=null;
 async function vShow(id){
   const sh=S.shows[id];
@@ -456,10 +489,10 @@ async function vShow(id){
   const eps=tv?.eps||[],aired=eps.filter(e=>!e.future),tot=aired.length;
   const nx=nextEp(id);
   const seasons={};eps.forEach(e=>{(seasons[e.s]=seasons[e.s]||[]).push(e)});
-  if(openSeason===null&&nx)openSeason=nx.s;
+  if(openSeason===null){openSeason=nx?nx.s:(aired.length?aired[aired.length-1].s:null)}
   const up=upcomingEp(id);
   const chips=[
-    up?`<span class="pill amber">S${up.s} E${up.e} · ${up.air} (${inDays(up.days)})</span>`:'',
+    up?`<span class="pill amber">next: S${up.s} E${up.e} · ${fmtDate(up.air)}</span>`:'',
     tv?.rating?`<span class="pill gold">★ ${tv.rating}</span>`:'',
     tv?.status?`<span class="pill ${tv.status==='Ended'?'red':tv.status==='Running'?'green':''}">${tv.status}${tv.premiered?` · ${tv.premiered}`:''}</span>`:'',
     tv?.network?`<span class="pill">${esc(tv.network)}</span>`:'',
@@ -486,7 +519,8 @@ async function vShow(id){
         ${open?`<div class="eps">${se.map(e=>{
           const k=epKey(e.s,e.e),ww=w[k];
           return `<div class="ep ${ww?'seen':''}" onclick="tgEp('${id}',${e.s},${e.e})">
-            <span class="num">E${e.e}</span><span class="nm">${esc(e.name)||(e.future?'(upcoming '+e.air+')':'')}</span>
+            <div class="th">${e.img?`<img loading="lazy" src="${e.img}">`:''}</div>
+            <span class="num">E${e.e}</span><span class="nm">${esc(e.name)||(e.future?'(upcoming '+fmtDate(e.air)+')':'')}</span>
             ${ww&&ww.n>1?`<span class="rw">×${ww.n}</span>`:''}
             <span class="check">✓</span></div>`}).join('')}</div>`:''}
       </div>`}).join('')||(tv?'<div class="empty">Episode list loading…</div>':'<div class="empty">No online match yet for this title.<br>Artwork and episodes appear once matching finishes.</div>')}
@@ -508,37 +542,136 @@ window.markNext=async id=>{
 };
 window.toggleFav=async id=>{S.shows[id].favorite=!S.shows[id].favorite;await saveOne('shows');render(false)};
 
-let movieTab='watched',movieQ='';
-window.setMTab=t=>{movieTab=t;render(false)};
+let movieTab='all',movieQ='',movieIds=null;
+const _today=()=>new Date().toISOString().slice(0,10);
+function movieMatches(m,tab){
+  if(tab==='all')return true;
+  if(tab==='seen')return m.status==='watched';
+  if(tab==='watchlist')return m.status==='watchlist';
+  if(tab==='upcoming')return m.status!=='watched'&&m.releaseDate&&m.releaseDate>=_today();
+  return true;
+}
+window.setMTab=t=>{movieTab=t;
+  movieIds=Object.values(S.movies).filter(m=>movieMatches(m,t)).map(m=>m.id);
+  render(false)};
 window.setMQ=v=>{movieQ=v.toLowerCase();render(false)};
+window.setMView=v=>{S.prefs.movieView=v;saveOne('prefs');render(false)};
+
+function movieRow(m){
+  const p=S.tmdbPosters[m.title],r=S.movieRatings[m.title];
+  const up=m.releaseDate&&m.releaseDate>=_today();
+  const sub=m.status==='watched'?fmtDate(m.watchDate)
+    :up?`releases ${fmtDate(m.releaseDate)}`
+    :(m.releaseDate?m.releaseDate.slice(0,4):'');
+  return `<a class="mrow" href="#/movie/${encodeURIComponent(m.id)}">
+    <div class="mp">${p?`<img loading="lazy" src="${p}">`:'🎬'}</div>
+    <div class="mi"><div class="mt">${esc(m.title)}</div>
+    <div class="ms">${sub}${m.runtime?' · '+fmtMin(m.runtime):''}${m.rewatch?` · ×${m.rewatch+1}`:''}${r!=null?` · you: ${r}`:''}</div></div>
+    <button class="act check ${m.status==='watched'?'on':''}" onclick="event.preventDefault();event.stopPropagation();tgMovie('${m.id.replace(/'/g,"\\'")}')">✓</button>
+  </a>`;
+}
+function movieCard(m){
+  const p=S.tmdbPosters[m.title];
+  const up=m.releaseDate&&m.releaseDate>=_today();
+  const tag=m.status==='watched'?'<span class="pill green tag">✓</span>'
+    :up?`<span class="pill amber tag">${fmtDate(m.releaseDate)}</span>`:'';
+  return `<a class="pc" href="#/movie/${encodeURIComponent(m.id)}">
+    ${p?`<img loading="lazy" src="${p}">`:`<div class="ph">${esc(m.title)}</div>`}${tag}</a>`;
+}
 function vMovies(){
   const all=Object.values(S.movies);
-  let list=all.filter(m=>m.status===movieTab);
+  if(movieIds===null)movieIds=all.map(m=>m.id);
+  let list=movieIds.map(id=>S.movies[id]).filter(Boolean);
   if(movieQ)list=list.filter(m=>m.title.toLowerCase().includes(movieQ));
-  list.sort((a,b)=>movieTab==='watched'?(b.watchDate||'').localeCompare(a.watchDate||''):a.title.localeCompare(b.title));
+  if(movieTab==='seen')list.sort((a,b)=>(b.watchDate||'').localeCompare(a.watchDate||''));
+  else if(movieTab==='upcoming')list.sort((a,b)=>(a.releaseDate||'').localeCompare(b.releaseDate||''));
+  else list.sort((a,b)=>a.title.localeCompare(b.title));
+  const counts={all:all.length,seen:all.filter(m=>m.status==='watched').length,
+    watchlist:all.filter(m=>m.status==='watchlist').length,
+    upcoming:all.filter(m=>movieMatches(m,'upcoming')).length};
+  const grid=S.prefs.movieView==='grid';
+  let body='';
+  if(movieTab==='upcoming'&&!grid){
+    let curMonth='';
+    body=list.map(m=>{
+      const d=new Date(m.releaseDate);
+      const mo=`${MON[d.getMonth()]} ${d.getFullYear()}`;
+      const hdr=mo!==curMonth?`<div class="mgh">${mo}</div>`:'';
+      curMonth=mo;
+      return hdr+movieRow(m);
+    }).join('');
+  }else{
+    body=grid?`<div class="grid">${list.map(movieCard).join('')}</div>`:list.map(movieRow).join('');
+  }
   return `<header class="hdr"><div class="name">Movies</div>
-    <div class="badge"><b>${all.filter(m=>m.status==='watched').length}</b> seen</div></header>
+    <button class="viewtg" onclick="setMView('${grid?'list':'grid'}')">${grid?'☰':'▦'}</button></header>
   <div class="chips">
-    <button class="chip ${movieTab==='watched'?'on':''}" onclick="setMTab('watched')">Watched ${all.filter(m=>m.status==='watched').length}</button>
-    <button class="chip ${movieTab==='watchlist'?'on':''}" onclick="setMTab('watchlist')">Want to watch ${all.filter(m=>m.status==='watchlist').length}</button>
+    ${[['all','All'],['seen','Seen'],['watchlist','Watchlist'],['upcoming','Upcoming']].map(([k,l])=>
+      `<button class="chip ${movieTab===k?'on':''}" onclick="setMTab('${k}')">${l} ${counts[k]}</button>`).join('')}
   </div>
   <div style="height:12px"></div>
   <input placeholder="Filter…" value="${esc(movieQ)}" oninput="setMQ(this.value)">
   <div style="height:12px"></div>
-  ${list.map(m=>{
-    const p=S.tmdbPosters[m.title];
-    const r=S.movieRatings[m.title];
-    return `<div class="mrow">
-      <div class="mp">${p?`<img loading="lazy" src="${p}">`:'🎬'}</div>
-      <div class="mi"><div class="mt">${esc(m.title)}</div>
-      <div class="ms">${m.status==='watched'?(m.watchDate||''):(m.releaseDate?'releases '+m.releaseDate:'')}${m.runtime?' · '+fmtMin(m.runtime):''}${m.rewatch?` · ×${m.rewatch+1}`:''}${r!=null?` · you: ${r}`:''}</div></div>
-      <button class="act check ${m.status==='watched'?'on':''}" onclick="tgMovie('${m.id.replace(/'/g,"\\'")}')">✓</button>
-    </div>`}).join('')||'<div class="empty">Nothing here.</div>'}`;
+  ${body||'<div class="empty">Nothing here.</div>'}`;
+}
+
+/* TMDB movie metadata (detail pages) */
+async function tmdbMovieMeta(m){
+  if(!S.keys.tmdb)return null;
+  if(S.tmdbMeta[m.title]!==undefined)return S.tmdbMeta[m.title];
+  try{
+    const y=m.releaseDate?`&year=${m.releaseDate.slice(0,4)}`:'';
+    const r=await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${S.keys.tmdb}&query=${encodeURIComponent(m.title)}${y}`);
+    const hit=(await r.json()).results?.[0];
+    if(!hit){S.tmdbMeta[m.title]=null;await saveOne('tmdbMeta');return null}
+    const d=await(await fetch(`https://api.themoviedb.org/3/movie/${hit.id}?api_key=${S.keys.tmdb}`)).json();
+    const meta={poster:d.poster_path?`https://image.tmdb.org/t/p/w342${d.poster_path}`:'',
+      backdrop:d.backdrop_path?`https://image.tmdb.org/t/p/w780${d.backdrop_path}`:'',
+      rating:d.vote_average?+d.vote_average.toFixed(1):null,
+      genres:(d.genres||[]).map(g=>g.name).slice(0,3),
+      overview:(d.overview||'').slice(0,420),runtime:d.runtime||null,
+      date:d.release_date||''};
+    S.tmdbMeta[m.title]=meta;
+    if(meta.poster)S.tmdbPosters[m.title]=meta.poster.replace('w342','w185');
+    await saveOne('tmdbMeta');await saveOne('tmdbPosters');
+    return meta;
+  }catch(e){return null}
+}
+function vMovie(id){
+  const m=S.movies[id];
+  if(!m)return'<div class="empty">Movie not found.</div>';
+  const meta=S.tmdbMeta[m.title];
+  if(meta===undefined&&S.keys.tmdb){tmdbMovieMeta(m).then(()=>render(false))}
+  const r=S.movieRatings[m.title];
+  const up=m.releaseDate&&m.releaseDate>=_today();
+  const art=meta?.backdrop||meta?.poster||S.tmdbPosters[m.title];
+  const chips=[
+    up?`<span class="pill amber">releases ${fmtDate(m.releaseDate)}</span>`:'',
+    meta?.rating?`<span class="pill gold">★ ${meta.rating}</span>`:'',
+    r!=null?`<span class="pill gold">you: ${r}</span>`:'',
+    (meta?.date||m.releaseDate)?`<span class="pill">${(meta?.date||m.releaseDate).slice(0,4)}</span>`:'',
+    (meta?.runtime||m.runtime)?`<span class="pill">${fmtMin(meta?.runtime||m.runtime)}</span>`:'',
+    m.rewatch?`<span class="pill">watched ×${m.rewatch+1}</span>`:'',
+    ...(meta?.genres||[]).map(g=>`<span class="pill">${esc(g)}</span>`)
+  ].join('');
+  return `<div class="dt-hero">
+    ${art?`<img src="${art}">`:`<div style="height:100%;background:var(--card2)"></div>`}
+    <div class="fade"></div>
+    <div class="top"><button class="iconbtn" onclick="history.back()">‹</button><span></span></div>
+    <div class="dt-title"><h1>${esc(m.title)}</h1><div class="meta">${chips}</div></div>
+  </div>
+  <div class="dt-body">
+    ${m.status==='watched'
+      ?`<button class="cta sub" onclick="tgMovie('${id.replace(/'/g,"\\'")}')">Watched ${m.watchDate?fmtDate(m.watchDate):''} ✓ · tap to undo</button>`
+      :`<button class="cta" onclick="tgMovie('${id.replace(/'/g,"\\'")}')">Mark as watched</button>`}
+    ${meta?.overview?`<div class="set" style="margin-top:16px"><h3>About</h3><p>${esc(meta.overview)}</p></div>`:''}
+    ${!S.keys.tmdb?'<div class="set" style="margin-top:16px"><p>Add a free TMDB key in Settings to load poster, rating, genres and synopsis here.</p></div>':''}
+  </div>`;
 }
 window.tgMovie=async id=>{
   const m=S.movies[id];if(!m)return;
-  if(m.status==='watched'){m.status='watchlist';m.watchDate=null}
-  else{m.status='watched';m.watchDate=new Date().toISOString().slice(0,10)}
+  if(m.status==='watched'){m.status='watchlist';m.watchDate=null;toast('Moved to watchlist')}
+  else{m.status='watched';m.watchDate=new Date().toISOString().slice(0,10);toast('Watched ✓')}
   await saveOne('movies');render(false);
 };
 
@@ -611,14 +744,15 @@ window.wipe=async()=>{
 /* ============ router ============ */
 function route(){
   const h=location.hash.slice(2)||'home';
-  const [r,arg]=h.split('/');
-  return {r,arg};
+  const i=h.indexOf('/');
+  return i<0?{r:h,arg:''}:{r:h.slice(0,i),arg:h.slice(i+1)};
 }
 async function render(scroll=true){
   const {r,arg}=route();
   renderNav(r);
   const app=$('#app');
   if(r==='show'){app.innerHTML=await vShow(arg)}
+  else if(r==='movie'){app.innerHTML=vMovie(decodeURIComponent(arg||''))}
   else if(r==='shows'){app.innerHTML=vShows()}
   else if(r==='movies'){app.innerHTML=vMovies()}
   else if(r==='search'){app.innerHTML=vSearch()}
@@ -644,7 +778,7 @@ function handleFile(f){
 /* ============ boot ============ */
 (async()=>{
   await DB.open();
-  for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters']){
+  for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters','prefs','tmdbMeta']){
     const v=await DB.get(k);if(v)S[k]=v;
   }
   S.loaded=Object.keys(S.shows).length>0;
