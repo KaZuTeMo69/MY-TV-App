@@ -211,6 +211,14 @@ function nextEp(id){
   const w=S.watched[id]||{};
   return tv.eps.find(e=>!e.future && !w[epKey(e.s,e.e)])||null;
 }
+function upcomingEp(id){
+  const tv=S.tvm[id]; if(!tv||!tv.eps) return null;
+  const up=tv.eps.find(e=>e.future);
+  if(!up) return null;
+  const days=Math.ceil((new Date(up.air)-new Date())/864e5);
+  return {...up,days};
+}
+const inDays=d=>d<=0?'today':d===1?'tomorrow':`in ${d}d`;
 
 /* ============ TVmaze API ============ */
 const TVM='https://api.tvmaze.com';
@@ -248,23 +256,41 @@ async function ensureEpisodes(id){
 let matching=false;
 async function backgroundMatch(){
   if(matching) return; matching=true;
-  const ids=Object.keys(S.shows).filter(id=>!S.tvm[id] && !id.startsWith('x_') && !S.tvm['miss_'+id]);
+  // priority: recently-watched first, then followed, then the rest
+  const prio=id=>{const s=S.shows[id];const lw=lastWatch(id);
+    return (lw?'2'+lw:(s.followed?'1':'0')+'0000000000000000000')};
+  const ids=Object.keys(S.shows)
+    .filter(id=>!S.tvm[id] && !id.startsWith('x_') && !S.tvm['miss_'+id])
+    .sort((a,b)=>prio(b).localeCompare(prio(a)));
   const bar=$('#matchbar');
   for(let i=0;i<ids.length;i++){
-    const res=await tvmLookup(ids[i]);
+    let res=null,tries=0;
+    while(tries<3){
+      try{
+        const r=await fetch(`${TVM}/lookup/shows?thetvdb=${ids[i]}`);
+        if(r.status===429){tries++;await new Promise(x=>setTimeout(x,4000));continue}
+        if(r.ok) res=normTvm(await r.json());
+        break;
+      }catch(e){break}
+    }
     if(res) S.tvm[ids[i]]=res; else S.tvm['miss_'+ids[i]]=1;
-    if(i%8===0){await saveOne('tvm'); render(false);}
+    if(i%6===0){await saveOne('tvm'); render(false);}
     bar.style.transform=`scaleX(${(i+1)/ids.length})`;
-    await new Promise(r=>setTimeout(r,560));
+    await new Promise(r=>setTimeout(r,520));
   }
   await saveOne('tvm');
   bar.style.transform='scaleX(0)';
   matching=false; render(false);
   if(ids.length) toast('Artwork & show data updated');
-  // prefetch episodes for active shows
-  const act=Object.values(S.shows).filter(s=>watchedCount(s.id)>0&&!s.archived&&S.tvm[s.id])
-    .sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id))).slice(0,12);
-  for(const s of act){await ensureEpisodes(s.id);await new Promise(r=>setTimeout(r,560));}
+  // prefetch episode lists (needed for progress %, next-up and countdowns)
+  const act=Object.values(S.shows)
+    .filter(s=>(watchedCount(s.id)>0||s.followed)&&!s.archived&&S.tvm[s.id]&&!S.tvm[s.id].eps)
+    .sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id)));
+  for(let i=0;i<act.length;i++){
+    await ensureEpisodes(act[i].id);
+    if(i%10===0)render(false);
+    await new Promise(r=>setTimeout(r,520));
+  }
   render(false);
 }
 
@@ -369,7 +395,9 @@ window.go=r=>{location.hash='#/'+r};
 function posterCard(sh){
   const tv=S.tvm[sh.id],img=tv?.img;
   const st=showState(sh);
-  const tag=st==='completed'?'<span class="pill green tag">✓ done</span>'
+  const up=upcomingEp(sh.id);
+  const tag=up&&st!=='plan'?`<span class="pill amber tag">ep ${inDays(up.days)}</span>`
+    :st==='completed'?'<span class="pill green tag">✓ done</span>'
     :st==='uptodate'?'<span class="pill gold tag">up to date</span>'
     :tv?.status==='Ended'&&st==='watching'?'<span class="pill red tag">ended</span>':'';
   return `<a class="pc" href="#/show/${sh.id}">
@@ -380,19 +408,19 @@ function posterCard(sh){
 
 function vHome(){
   const active=Object.values(S.shows)
-    .filter(s=>watchedCount(s.id)>0&&['watching'].includes(showState(s)))
+    .filter(s=>watchedCount(s.id)>0&&(showState(s)==='watching'||(showState(s)==='uptodate'&&upcomingEp(s.id))))
     .sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id)));
   const recent=Object.values(S.shows).filter(s=>watchedCount(s.id)>0)
     .sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id))).slice(0,12);
   const eps=Object.values(S.watched).reduce((a,w)=>a+Object.keys(w).length,0);
   const mv=Object.values(S.movies).filter(m=>m.status==='watched').length;
   const hero=active.slice(0,10).map(s=>{
-    const tv=S.tvm[s.id],nx=nextEp(s.id),wc=watchedCount(s.id);
+    const tv=S.tvm[s.id],nx=nextEp(s.id),up=upcomingEp(s.id),wc=watchedCount(s.id);
     const tot=tv?.eps?tv.eps.filter(e=>!e.future).length:0;
     return `<a class="hcard" href="#/show/${s.id}">
       ${tv?.img?`<img loading="lazy" src="${tv.imgBig||tv.img}">`:`<div class="ph">${esc(s.title)}</div>`}
       <div class="ov"><div class="t">${esc(s.title)}</div>
-      <div class="nx">${nx?`next · S${nx.s} E${nx.e}`:tot?'':'&nbsp;'}</div>
+      <div class="nx">${nx?`next · S${nx.s} E${nx.e}`:(up?`new ep ${inDays(up.days)} · ${up.air}`:tot?'':'&nbsp;')}</div>
       ${tot?`<div class="bar"><i style="width:${Math.min(100,wc/tot*100)}%"></i></div>`:''}</div></a>`;
   }).join('');
   return `<header class="hdr"><div><div class="hi">Hello,</div><div class="name">Abdo</div></div>
@@ -429,7 +457,9 @@ async function vShow(id){
   const nx=nextEp(id);
   const seasons={};eps.forEach(e=>{(seasons[e.s]=seasons[e.s]||[]).push(e)});
   if(openSeason===null&&nx)openSeason=nx.s;
+  const up=upcomingEp(id);
   const chips=[
+    up?`<span class="pill amber">S${up.s} E${up.e} · ${up.air} (${inDays(up.days)})</span>`:'',
     tv?.rating?`<span class="pill gold">★ ${tv.rating}</span>`:'',
     tv?.status?`<span class="pill ${tv.status==='Ended'?'red':tv.status==='Running'?'green':''}">${tv.status}${tv.premiered?` · ${tv.premiered}`:''}</span>`:'',
     tv?.network?`<span class="pill">${esc(tv.network)}</span>`:'',
