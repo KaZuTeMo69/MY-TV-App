@@ -38,6 +38,11 @@ img{display:block}
 .hdr .badge{background:var(--card);border:1px solid #3a3128;border-radius:14px;padding:10px 14px;font-size:12px;color:var(--tx2)}
 .hdr .badge b{color:var(--gold)}
 
+/* segmented slider */
+.seg{position:relative;display:flex;background:var(--card);border-radius:999px;padding:4px;border:1px solid #352c22;flex:1;max-width:250px;margin:0 10px}
+.seg button{position:relative;z-index:2;flex:1;padding:10px 4px;font-size:11.5px;font-weight:700;color:var(--tx2);border-radius:999px;white-space:nowrap;transition:color .2s}
+.seg button.on{color:#221a10}
+.seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);background:linear-gradient(135deg,#e5c186,#c99f58);border-radius:999px;transition:transform .25s cubic-bezier(.3,.7,.4,1);z-index:1}
 /* section titles */
 .sec{display:flex;align-items:baseline;justify-content:space-between;margin:22px 2px 12px}
 .sec h2{font-size:16px}
@@ -45,7 +50,7 @@ img{display:block}
 
 /* chips */
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px}
-.chip{flex:0 0 auto;padding:11px 17px;border-radius:999px;background:var(--card);border:1px solid #352c22;font-size:13px;color:var(--tx2);white-space:nowrap}
+.chip{flex:0 0 auto;padding:11px 17px;border-radius:999px;background:var(--card);border:1px solid #352c22;font-size:13px;font-weight:600;color:var(--tx2);white-space:nowrap}
 .chip.on{background:var(--gold-soft);border-color:var(--gold-dim);color:var(--gold);font-weight:600}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);font-size:11.5px;color:var(--tx);border:1px solid rgba(255,255,255,.12)}
 .pill.gold{color:var(--gold);border-color:var(--gold-dim)}
@@ -99,13 +104,19 @@ img{display:block}
 .ep .num{color:var(--tx3);min-width:34px}
 .ep .nm{flex:1;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ep.seen .nm{color:var(--tx)}
-.ep .rw{font-size:10.5px;color:var(--gold)}
+.ep .rw{font-size:11px;color:var(--gold)}
 .check{width:34px;height:34px;border-radius:11px;border:1.5px solid #463b30;display:flex;align-items:center;justify-content:center;font-size:15px;color:transparent;flex:0 0 auto}
 .ep.seen .check,.check.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 
+.castc{flex:0 0 92px;text-align:center}
+.castp{width:76px;height:76px;border-radius:50%;overflow:hidden;background:var(--card2);margin:0 auto 7px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.castp img{width:100%;height:100%;object-fit:cover}
+.castn{font-size:11.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.castr{font-size:11px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* episode thumbs */
 .ep .th{width:58px;height:33px;border-radius:6px;overflow:hidden;background:var(--card2);flex:0 0 auto}
 .ep .th img{width:100%;height:100%;object-fit:cover}
+.epdate{font-size:11.5px;font-weight:600;color:var(--amber);white-space:nowrap;flex:0 0 auto}
 /* month group header */
 .mgh{font-size:12px;color:var(--gold);margin:18px 2px 8px;letter-spacing:.06em;text-transform:uppercase}
 .viewtg{width:46px;height:46px;border-radius:14px;background:var(--card);border:1px solid #3a3128;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--tx2)}
@@ -118,6 +129,8 @@ img{display:block}
 .mrow .ms{font-size:11.5px;color:var(--tx2);margin-top:3px}
 .mrow .act{flex:0 0 auto}
 
+.filters{display:flex;gap:8px;margin:12px 0;overflow-x:auto}
+.filters select{flex:1;min-width:110px;padding:13px 11px;border-radius:12px;background:var(--card);border:1px solid #3a3128;color:var(--tx);font-size:12.5px;font-weight:600;appearance:none}
 /* search */
 .srch{position:sticky;top:0;background:linear-gradient(var(--bg) 75%,transparent);padding:14px 0 10px;z-index:5}
 
@@ -135,7 +148,7 @@ img{display:block}
   display:flex;justify-content:space-around;padding:8px;border-radius:24px;
   background:rgba(30,24,19,.72);backdrop-filter:blur(18px);border:1px solid rgba(216,178,110,.12);
   box-shadow:0 10px 34px rgba(0,0,0,.5);z-index:50}
-.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 13px;border-radius:16px;font-size:10px;color:var(--tx3)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 13px;border-radius:16px;font-size:11px;font-weight:600;color:var(--tx3)}
 .nav button.on{color:var(--gold);background:var(--gold-soft)}
 .nav button svg{width:22px;height:22px}
 
@@ -188,12 +201,14 @@ let S = {
   epRatings:[], movieRatings:{},
   tvm:{},          // tvdbId -> tvmaze show cache {mid,img,fan,status,premiered,genres,network,rating,eps:[{s,e,name,air}],epsAt}
   keys:{tmdb:'',omdb:''},
-  prefs:{movieView:'list',showView:'grid'},
+  prefs:{movieView:'list',showView:'grid',listView:'grid'},
   tmdbMeta:{},
+  prov:{},   // 's<tvdbId>' | 'm<movieId>' -> [{n,l}] watch providers
+  sugg:{},   // search suggestions cache {key:{at,items}}
   tmdbPosters:{},  // movie title -> poster url
   loaded:false
 };
-const save = async ()=>{ for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters','prefs','tmdbMeta']) await DB.set(k,S[k]); };
+const save = async ()=>{ for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters','prefs','tmdbMeta','prov']) await DB.set(k,S[k]); };
 const saveOne = k => DB.set(k,S[k]);
 
 /* ============ helpers ============ */
@@ -204,9 +219,11 @@ const epKey=(s,e)=>`${s}-${e}`;
 const watchedCount = id => Object.keys(S.watched[id]||{}).length;
 const lastWatch = id => Object.values(S.watched[id]||{}).reduce((a,x)=>x.d>a?x.d:a,'');
 const fmtMin = m=>{if(!m)return'';const h=Math.floor(m/60);return h>=1?`${h}h ${m%60}m`:`${m}m`};
+const _today=()=>new Date().toISOString().slice(0,10);
 
 function showState(sh){
   const tv=S.tvm[sh.id], wc=watchedCount(sh.id);
+  if(sh.userStatus==='later') return 'onhold';
   if(sh.userStatus==='plan'&&!wc) return 'plan';
   if(tv&&tv.eps&&wc>=tv.eps.filter(e=>!e.future).length&&wc>0){
     return tv.status==='Ended'?'completed':(nextEp(sh.id)?'watching':'uptodate');
@@ -229,6 +246,19 @@ function upcomingEp(id){
 }
 const inDays=d=>d<=0?'today':d===1?'tomorrow':`in ${d}d`;
 const agoDays=ds=>{const d=Math.floor((new Date()-new Date(ds))/864e5);return d<=0?'today':d===1?'1d ago':`${d}d ago`};
+const USTAT=[['all','All'],['watching','Watching'],['towatch','To watch'],['done','Done'],['uptodate','Up to date'],['later','Later'],['upcoming','Upcoming']];
+function uniState(it){ // -> one of watching/towatch/done/uptodate/later/upcoming-included set
+  if(it._t==='m'){
+    const st=[];
+    if(it.status==='watched')st.push('done');else st.push('towatch');
+    if(it.status!=='watched'&&it.releaseDate&&it.releaseDate>=_today())st.push('upcoming');
+    return st;
+  }
+  const s=showState(it), map={watching:'watching',plan:'towatch',completed:'done',uptodate:'uptodate',onhold:'later'};
+  const st=[map[s]||'towatch'];
+  if(upcomingEp(it.id))st.push('upcoming');
+  return st;
+}
 function newEp(id){
   const nx=nextEp(id); if(!nx||!nx.air) return null;
   const age=(new Date()-new Date(nx.air))/864e5;
@@ -333,6 +363,71 @@ async function backgroundMatch(){
   render(false);
 }
 
+const TMDB_GENRES={28:'Action',12:'Adventure',16:'Animation',35:'Comedy',80:'Crime',99:'Documentary',18:'Drama',10751:'Family',14:'Fantasy',36:'History',27:'Horror',10402:'Music',9648:'Mystery',10749:'Romance',878:'Science Fiction',10770:'TV Movie',53:'Thriller',10752:'War',37:'Western',10759:'Action & Adventure',10762:'Kids',10763:'News',10764:'Reality',10765:'Sci-Fi & Fantasy',10766:'Soap',10767:'Talk',10768:'War & Politics'};
+const tmdbFetch=async path=>{
+  const sep=path.includes('?')?'&':'?';
+  const r=await fetch(`https://api.themoviedb.org/3${path}${sep}api_key=${S.keys.tmdb}`);
+  if(!r.ok)throw new Error('tmdb '+r.status);
+  return r.json();
+};
+function provPick(j){ // watch-providers payload -> [{n,l}]
+  const rg=j.results?.SA||j.results?.AE||j.results?.US||{};
+  const seen={},out=[];
+  ['flatrate','free','ads'].forEach(k=>(rg[k]||[]).forEach(p=>{
+    if(!seen[p.provider_name]){seen[p.provider_name]=1;
+      out.push({n:p.provider_name,l:p.logo_path?`https://image.tmdb.org/t/p/w45${p.logo_path}`:''})}}));
+  return out.slice(0,5);
+}
+/* background: providers + movie genres for the whole library */
+let provRunning=false;
+async function providerMatch(){
+  if(provRunning||!S.keys.tmdb)return;provRunning=true;
+  try{
+    // movies: ensure tmdbMeta (genres/providers/trailer/credits) exists
+    const ms=Object.values(S.movies).filter(m=>S.tmdbMeta[m.title]===undefined);
+    for(let i=0;i<ms.length;i++){
+      await tmdbMovieMeta(ms[i]);
+      if(i%12===0)render(false);
+      await new Promise(r=>setTimeout(r,130));
+    }
+    // movie providers from meta
+    Object.values(S.movies).forEach(m=>{
+      const meta=S.tmdbMeta[m.title];
+      if(meta&&meta.prov&&!S.prov['m'+m.id])S.prov['m'+m.id]=meta.prov;
+    });
+    // shows: resolve tmdb id + providers
+    const ss=Object.values(S.shows).filter(s=>S.prov['s'+s.id]===undefined&&S.tvm[s.id]);
+    for(let i=0;i<ss.length;i++){
+      const sh=ss[i];
+      try{
+        let tid=S.tvm[sh.id].tmdbId;
+        if(!tid){
+          const j=await tmdbFetch(`/search/tv?query=${encodeURIComponent(sh.title)}`);
+          tid=j.results?.[0]?.id||0;
+          S.tvm[sh.id].tmdbId=tid;
+        }
+        if(tid){
+          const pj=await tmdbFetch(`/tv/${tid}/watch/providers`);
+          S.prov['s'+sh.id]=provPick(pj);
+        }else S.prov['s'+sh.id]=[];
+      }catch(e){S.prov['s'+sh.id]=[]}
+      if(i%10===0){await saveOne('prov');await saveOne('tvm');render(false)}
+      await new Promise(r=>setTimeout(r,150));
+    }
+    await saveOne('prov');await saveOne('tvm');
+  }catch(e){}
+  provRunning=false;render(false);
+}
+/* TVmaze cast for shows */
+async function tvmCast(id){
+  const tv=S.tvm[id];if(!tv||!tv.mid||tv.cast!==undefined)return;
+  tv.cast=[];
+  try{
+    const r=await fetch(`${TVM}/shows/${tv.mid}/cast`);
+    if(r.ok)tv.cast=(await r.json()).slice(0,14).map(c=>({n:c.person?.name||'',c:c.character?.name||'',img:c.person?.image?.medium||''}));
+  }catch(e){}
+  await saveOne('tvm');render(false);
+}
 /* TMDB posters for movies (optional) */
 async function tmdbMatch(){
   if(!S.keys.tmdb) return;
@@ -420,12 +515,13 @@ function exportJSON(){
 /* ============ views ============ */
 const ICONS={
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
+ list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="7" height="9" rx="1.5"/><rect x="14" y="4" width="7" height="9" rx="1.5"/><path d="M3 17h18M3 21h12"/></svg>',
  shows:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="m8 2 4 4 4-4"/></svg>',
  movies:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 4v5M12 4v5M17 4v5"/></svg>',
  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5c.06-.4.1-.8.1-1.2z"/></svg>'
 };
-const NAV=[['home','Home'],['shows','Shows'],['movies','Movies'],['search','Search'],['gear','Settings']];
+const NAV=[['home','Home'],['list','My List'],['search','Search'],['gear','Settings']];
 function renderNav(route){
   $('#nav').innerHTML=NAV.map(([k,l])=>`<button class="${route===k?'on':''}" onclick="go('${k}')">${ICONS[k]}<span>${l}</span></button>`).join('');
 }
@@ -448,12 +544,17 @@ function posterCard(sh){
 }
 
 function vHome(){
-  const active=Object.values(S.shows)
-    .filter(s=>watchedCount(s.id)>0&&(showState(s)==='watching'||(showState(s)==='uptodate'&&upcomingEp(s.id))))
+  const watchNow=Object.values(S.shows)
+    .filter(s=>watchedCount(s.id)>0&&showState(s)==='watching'&&nextEp(s.id)!==null||
+      (watchedCount(s.id)>0&&showState(s)==='watching'&&!S.tvm[s.id]?.eps))
     .sort((a,b)=>{
       const na=newEp(a.id)?1:0,nb=newEp(b.id)?1:0;
       if(na!==nb)return nb-na;
       return lastWatch(b.id).localeCompare(lastWatch(a.id))});
+  const upcoming=Object.values(S.shows)
+    .filter(s=>watchedCount(s.id)>0&&showState(s)!=='onhold'&&!nextEp(s.id)&&upcomingEp(s.id))
+    .sort((a,b)=>upcomingEp(a.id).air.localeCompare(upcomingEp(b.id).air));
+  const active=watchNow;
   const nNew=active.filter(s=>newEp(s.id)).length;
   const recent=Object.values(S.shows).filter(s=>watchedCount(s.id)>0)
     .sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id))).slice(0,12);
@@ -474,39 +575,25 @@ function vHome(){
   }).join('');
   return `<header class="hdr"><div><div class="hi">Hello,</div><div class="name">Abdo</div></div>
     <div class="badge">${nNew?`<b style="color:var(--green)">${nNew} new</b> · `:''}<b>${eps}</b> eps · <b>${mv}</b> films</div></header>
-  <div class="sec"><h2>Watch next</h2><span class="all" onclick="go('shows')">See all</span></div>
-  ${hero?`<div class="hero">${hero}</div>`:'<div class="empty"><div class="big">◌</div>Nothing in progress.<br>Import your data in Settings, or add a show via Search.</div>'}
+  <div class="sec"><h2>Watch next</h2><span class="all" onclick="go('list')">See all</span></div>
+  ${hero?`<div class="hero">${hero}</div>`:'<div class="empty"><div class="big">◌</div>Nothing to watch right now.<br>Import data in Settings, or add shows via Search.</div>'}
+  ${upcoming.length?`<div class="sec"><h2>Upcoming</h2></div>
+  <div class="row-scroll">${upcoming.map(s=>{
+    const up=upcomingEp(s.id),tv=S.tvm[s.id];
+    return `<a class="pc" href="#/show/${s.id}">
+      ${tv?.img?`<img loading="lazy" src="${tv.img}">`:`<div class="ph">${esc(s.title)}</div>`}
+      <span class="pill amber tag">${fmtDate(up.air)}</span></a>`}).join('')}</div>`:''}
   <div class="sec"><h2>Recently watched</h2></div>
   <div class="row-scroll">${recent.map(posterCard).join('')||'<div class="empty">—</div>'}</div>
   ${favs.length?`<div class="sec"><h2>Favorites</h2></div>
   <div class="row-scroll">${favs.join('')}</div>`:''}`;
 }
 
-let showFilter='all';
-window.setFilter=f=>{showFilter=f;render(false)};
-function vShows(){
-  const F=[['all','All'],['watching','Watching'],['uptodate','Up to date'],['completed','Completed'],['onhold','On hold'],['plan','Plan to watch']];
-  let list=Object.values(S.shows).filter(s=>watchedCount(s.id)>0||s.followed||s.userStatus);
-  const counts={all:list.length};
-  F.slice(1).forEach(([k])=>counts[k]=list.filter(s=>showState(s)===k).length);
-  if(showFilter!=='all')list=list.filter(s=>showState(s)===showFilter);
-  list.sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id))||a.title.localeCompare(b.title));
-  const grid=S.prefs.showView!=='list';
-  return `<header class="hdr"><div class="name">Shows</div>
-    <button class="viewtg" onclick="setSView('${grid?'list':'grid'}')">${grid?'☰':'▦'}</button></header>
-  <div class="chips">${F.map(([k,l])=>`<button class="chip ${showFilter===k?'on':''}" onclick="setFilter('${k}')">${l}${counts[k]!=null?` ${counts[k]}`:''}</button>`).join('')}</div>
-  <div style="height:14px"></div>
-  ${grid?`<div class="grid">${list.map(posterCard).join('')||'<div class="empty">No shows here yet.</div>'}</div>`
-    :(list.map(showRow).join('')||'<div class="empty">No shows here yet.</div>')}`;
-}
-
-window.setSView=v=>{S.prefs.showView=v;saveOne('prefs');render(false)};
 function showRow(sh){
   const tv=S.tvm[sh.id],wc=watchedCount(sh.id);
   const tot=tv?.eps?tv.eps.filter(e=>!e.future).length:0;
-  const nx=nextEp(sh.id),up=upcomingEp(sh.id);
-  const nw=newEp(sh.id);
-  const sub=[tot?`${wc}/${tot}`:wc?`${wc} eps`:'' ,
+  const nx=nextEp(sh.id),up=upcomingEp(sh.id),nw=newEp(sh.id);
+  const sub=[tot?`${wc}/${tot}`:wc?`${wc} eps`:'',
     nw?`NEW S${nw.s} E${nw.e}`:nx?`next S${nx.s} E${nx.e}`:up?`new ep ${fmtDate(up.air)}`:'',
     tv?.status==='Ended'?'ended':''].filter(Boolean).join(' · ');
   return `<a class="mrow" href="#/show/${sh.id}">
@@ -515,6 +602,80 @@ function showRow(sh){
     <div class="ms">${sub}</div></div>
   </a>`;
 }
+let LQ={seg:'all',status:'all',screen:'all',genre:'all'};
+window.setSeg=v=>{LQ.seg=v;if(v==='movies'&&['watching','uptodate','later'].includes(LQ.status))LQ.status='all';render(false)};
+window.setLQ=(k,v)=>{LQ[k]=v;render(false)};
+window.setLView=v=>{S.prefs.listView=v;saveOne('prefs');render(false)};
+
+function segSlider(cur,setter){
+  const opts=[['all','All'],['shows','Shows'],['movies','Movies']];
+  const idx=opts.findIndex(o=>o[0]===cur);
+  return `<div class="seg"><div class="thumb" style="transform:translateX(${idx*100}%)"></div>
+    ${opts.map(([k,l])=>`<button class="${cur===k?'on':''}" onclick="${setter}('${k}')">${l}</button>`).join('')}</div>`;
+}
+function libItems(){
+  const shows=Object.values(S.shows).filter(s=>watchedCount(s.id)>0||s.followed||s.userStatus).map(s=>({...s,_t:'s'}));
+  const movies=Object.values(S.movies).map(m=>({...m,_t:'m'}));
+  return LQ.seg==='shows'?shows:LQ.seg==='movies'?movies:[...shows,...movies];
+}
+function itemGenres(it){
+  return it._t==='s'?(S.tvm[it.id]?.genres||[]):(S.tmdbMeta[it.title]?.genres||[]);
+}
+function itemProv(it){
+  const p=S.prov[(it._t==='s'?'s':'m')+it.id]||[];
+  if(it._t==='s'&&S.tvm[it.id]?.network&&!p.length)return[{n:S.tvm[it.id].network,l:''}];
+  return p;
+}
+function vList(){
+  let items=libItems();
+  // options for dropdowns (built from current segment's library)
+  const genres=[...new Set(items.flatMap(itemGenres))].sort();
+  const provs=[...new Set(items.flatMap(it=>itemProv(it).map(p=>p.n)))].sort();
+  // apply filters
+  if(LQ.status!=='all')items=items.filter(it=>uniState(it).includes(LQ.status));
+  if(LQ.genre!=='all')items=items.filter(it=>itemGenres(it).includes(LQ.genre));
+  if(LQ.screen!=='all')items=items.filter(it=>itemProv(it).some(p=>p.n===LQ.screen));
+  // sort
+  if(LQ.status==='upcoming'){
+    const key=it=>it._t==='m'?(it.releaseDate||'9999'):(upcomingEp(it.id)?.air||'9999');
+    items.sort((a,b)=>key(a).localeCompare(key(b)));
+  }else{
+    const key=it=>it._t==='s'?lastWatch(it.id):(it.watchDate||it.addedAt||'');
+    items.sort((a,b)=>key(b).localeCompare(key(a))||(a.title.localeCompare(b.title)));
+  }
+  const statOpts=USTAT.filter(([k])=>{
+    if(LQ.seg==='movies'&&['watching','uptodate','later'].includes(k))return false;
+    return true;
+  });
+  const grid=S.prefs.listView!=='list';
+  const provLogo=n=>{for(const it of libItems()){const p=itemProv(it).find(x=>x.n===n&&x.l);if(p)return p.l}return''};
+  return `<header class="hdr"><div class="name">My List</div>
+    ${segSlider(LQ.seg,'setSeg')}
+    <button class="viewtg" onclick="setLView('${grid?'list':'grid'}')">${grid?'☰':'▦'}</button></header>
+  <div class="chips">
+    ${statOpts.map(([k,l])=>`<button class="chip ${LQ.status===k?'on':''}" onclick="setLQ('status','${k}')">${l}</button>`).join('')}
+  </div>
+  <div class="filters">
+    <select onchange="setLQ('screen',this.value)">
+      <option value="all">Screen: All</option>
+      ${provs.map(p=>`<option value="${esc(p)}" ${LQ.screen===p?'selected':''}>${esc(p)}</option>`).join('')}
+    </select>
+    <select onchange="setLQ('genre',this.value)">
+      <option value="all">Genre: All</option>
+      ${genres.map(g=>`<option value="${esc(g)}" ${LQ.genre===g?'selected':''}>${esc(g)}</option>`).join('')}
+    </select>
+  </div>
+  ${LQ.screen!=='all'&&provLogo(LQ.screen)?`<div style="display:flex;align-items:center;gap:8px;margin:2px 2px 10px;font-size:12px;color:var(--tx2)"><img src="${provLogo(LQ.screen)}" style="width:22px;height:22px;border-radius:6px">${esc(LQ.screen)} · ${items.length} titles</div>`:''}
+  ${grid?`<div class="grid">${items.map(it=>it._t==='s'?posterCard(it):movieCard(it)).join('')||'<div class="empty">Nothing matches these filters.</div>'}</div>`
+    :(items.map(it=>it._t==='s'?showRow(it):movieRow(it)).join('')||'<div class="empty">Nothing matches these filters.</div>')}`;
+}
+function castRow(cast){
+  if(!cast||!cast.length)return'';
+  return `<div class="sec" style="margin-top:18px"><h2>Cast</h2></div>
+  <div class="row-scroll">${cast.map(c=>`<div class="castc">
+    <div class="castp">${c.img?`<img loading="lazy" src="${c.img}">`:'👤'}</div>
+    <div class="castn">${esc(c.n)}</div><div class="castr">${esc(c.c)}</div></div>`).join('')}</div>`;
+}
 let openSeason=null;
 async function vShow(id){
   const sh=S.shows[id];
@@ -522,6 +683,7 @@ async function vShow(id){
   const tv=S.tvm[id];
   if(tv&&!tv.eps){ensureEpisodes(id).then(ok=>ok&&render(false))}
   if(tv&&tv.trailer===undefined&&S.keys.tmdb){tvTrailer(id)}
+  if(tv&&tv.cast===undefined){tvmCast(id)}
   const w=S.watched[id]||{},wc=Object.keys(w).length;
   const eps=tv?.eps||[],aired=eps.filter(e=>!e.future),tot=aired.length;
   const nx=nextEp(id);
@@ -558,21 +720,27 @@ async function vShow(id){
         <span>Season ${sn}</span><span class="cnt">${seen}/${se.length} ${open?'▾':'▸'}</span></button>
         ${open?`<div class="eps">${se.map(e=>{
           const k=epKey(e.s,e.e),ww=w[k];
-          return `<div class="ep ${ww?'seen':''}" onclick="tgEp('${id}',${e.s},${e.e})">
+          return `<div class="ep ${ww?'seen':''}" ${e.future?'':`onclick="tgEp('${id}',${e.s},${e.e})"`}>
             <div class="th">${e.img?`<img loading="lazy" src="${e.img}">`:''}</div>
-            <span class="num">E${e.e}</span><span class="nm">${esc(e.name)||(e.future?'(upcoming '+fmtDate(e.air)+')':'')}</span>
+            <span class="num">E${e.e}</span><span class="nm">${esc(e.name)||''}</span>
             ${ww&&ww.n>1?`<span class="rw">×${ww.n}</span>`:''}
-            <span class="check">✓</span></div>`}).join('')}</div>`:''}
+            ${e.future?`<span class="epdate">${fmtDate(e.air)}</span>`:'<span class="check">✓</span>'}</div>`}).join('')}</div>`:''}
       </div>`}).join('')||(tv?'<div class="empty">Episode list loading…</div>':'<div class="empty">No online match yet for this title.<br>Artwork and episodes appear once matching finishes.</div>')}
     ${tv?.summary?`<div class="set" style="margin-top:14px"><h3>About</h3><p>${esc(tv.summary)}…</p></div>`:''}
-    <button class="btn danger" style="width:100%;margin-top:16px" onclick="rmShow('${id}')">Remove from library</button>
+    ${castRow(tv?.cast)}
+    <button class="btn" style="width:100%;margin-top:16px" onclick="tgLater('${id}')">${showState(sh)==='onhold'?'▶ Resume watching':'⏸ Watch later'}</button>
+    <button class="btn danger" style="width:100%;margin-top:10px" onclick="rmShow('${id}')">Remove from library</button>
   </div>`;
 }
 window.tgSeason=sn=>{openSeason=openSeason===sn?-1:sn;render(false)};
 window.tgEp=async(id,s,e)=>{
   const k=epKey(s,e);S.watched[id]=S.watched[id]||{};
   if(S.watched[id][k])delete S.watched[id][k];
-  else S.watched[id][k]={d:new Date().toISOString().slice(0,19).replace('T',' '),n:1};
+  else{
+    S.watched[id][k]={d:new Date().toISOString().slice(0,19).replace('T',' '),n:1};
+    const sh=S.shows[id];
+    if(sh&&showState(sh)==='onhold'){sh.userStatus=null;sh.archived=false;await saveOne('shows');toast('Resumed watching')}
+  }
   await saveOne('watched');render(false);
 };
 window.markNext=async id=>{
@@ -582,34 +750,25 @@ window.markNext=async id=>{
   await saveOne('watched');toast(`S${nx.s} E${nx.e} ✓`);render(false);
 };
 window.toggleFav=async id=>{S.shows[id].favorite=!S.shows[id].favorite;await saveOne('shows');render(false)};
+window.tgLater=async id=>{
+  const sh=S.shows[id];if(!sh)return;
+  if(showState(sh)==='onhold'){sh.userStatus=null;sh.archived=false;toast('Back to watching')}
+  else{sh.userStatus='later';toast('Moved to watch later')}
+  await saveOne('shows');render(false);
+};
 window.rmShow=async id=>{
   const sh=S.shows[id];if(!sh)return;
   const wc=watchedCount(id);
   if(!confirm(`Remove "${sh.title}"${wc?` and its ${wc} watched episodes`:''} from your library? This cannot be undone (except via backup).`))return;
   delete S.shows[id];delete S.watched[id];delete S.tvm[id];
-  await save();toast('Removed');go('shows');
+  await save();toast('Removed');go('list');
 };
 window.rmMovie=async id=>{
   const m=S.movies[id];if(!m)return;
   if(!confirm(`Remove "${m.title}" from your library? This cannot be undone (except via backup).`))return;
-  delete S.movies[id];movieIds=movieIds?movieIds.filter(x=>x!==id):null;
-  await saveOne('movies');toast('Removed');go('movies');
+  delete S.movies[id];
+  await saveOne('movies');toast('Removed');go('list');
 };
-
-let movieTab='all',movieQ='',movieIds=null;
-const _today=()=>new Date().toISOString().slice(0,10);
-function movieMatches(m,tab){
-  if(tab==='all')return true;
-  if(tab==='seen')return m.status==='watched';
-  if(tab==='watchlist')return m.status==='watchlist';
-  if(tab==='upcoming')return m.status!=='watched'&&m.releaseDate&&m.releaseDate>=_today();
-  return true;
-}
-window.setMTab=t=>{movieTab=t;
-  movieIds=Object.values(S.movies).filter(m=>movieMatches(m,t)).map(m=>m.id);
-  render(false)};
-window.setMQ=v=>{movieQ=v.toLowerCase();const el=$('#mvbody');if(el)el.innerHTML=moviesBody()};
-window.setMView=v=>{S.prefs.movieView=v;saveOne('prefs');render(false)};
 
 function movieRow(m){
   const p=S.tmdbPosters[m.title],r=S.movieRatings[m.title];
@@ -632,46 +791,6 @@ function movieCard(m){
   return `<a class="pc" href="#/movie/${encodeURIComponent(m.id)}">
     ${p?`<img loading="lazy" src="${p}">`:`<div class="ph">${esc(m.title)}</div>`}${tag}</a>`;
 }
-function moviesBody(){
-  if(movieIds===null)movieIds=Object.values(S.movies).map(m=>m.id);
-  let list=movieIds.map(id=>S.movies[id]).filter(Boolean);
-  if(movieQ)list=list.filter(m=>m.title.toLowerCase().includes(movieQ));
-  if(movieTab==='seen')list.sort((a,b)=>(b.watchDate||'').localeCompare(a.watchDate||''));
-  else if(movieTab==='upcoming')list.sort((a,b)=>(a.releaseDate||'').localeCompare(b.releaseDate||''));
-  else list.sort((a,b)=>a.title.localeCompare(b.title));
-  const grid=S.prefs.movieView==='grid';
-  if(movieTab==='upcoming'&&!grid){
-    let curMonth='';
-    return list.map(m=>{
-      const d=new Date(m.releaseDate);
-      const mo=`${MON[d.getMonth()]} ${d.getFullYear()}`;
-      const hdr=mo!==curMonth?`<div class="mgh">${mo}</div>`:'';
-      curMonth=mo;
-      return hdr+movieRow(m);
-    }).join('')||'<div class="empty">Nothing here.</div>';
-  }
-  return (grid?`<div class="grid">${list.map(movieCard).join('')}</div>`:list.map(movieRow).join(''))||'<div class="empty">Nothing here.</div>';
-}
-function vMovies(){
-  const all=Object.values(S.movies);
-  if(movieIds===null)movieIds=all.map(m=>m.id);
-  const counts={all:all.length,seen:all.filter(m=>m.status==='watched').length,
-    watchlist:all.filter(m=>m.status==='watchlist').length,
-    upcoming:all.filter(m=>movieMatches(m,'upcoming')).length};
-  const grid=S.prefs.movieView==='grid';
-  return `<header class="hdr"><div class="name">Movies</div>
-    <button class="viewtg" onclick="setMView('${grid?'list':'grid'}')">${grid?'☰':'▦'}</button></header>
-  <div class="chips">
-    ${[['all','All'],['seen','Seen'],['watchlist','Watchlist'],['upcoming','Upcoming']].map(([k,l])=>
-      `<button class="chip ${movieTab===k?'on':''}" onclick="setMTab('${k}')">${l} ${counts[k]}</button>`).join('')}
-  </div>
-  <div style="height:12px"></div>
-  <input placeholder="Filter…" value="${esc(movieQ)}" oninput="setMQ(this.value)">
-  <div style="height:12px"></div>
-  <div id="mvbody">${moviesBody()}</div>`;
-}
-
-/* TMDB movie metadata (detail pages) */
 async function tmdbMovieMeta(m){
   if(!S.keys.tmdb)return null;
   if(S.tmdbMeta[m.title]!==undefined)return S.tmdbMeta[m.title];
@@ -680,7 +799,7 @@ async function tmdbMovieMeta(m){
     const r=await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${S.keys.tmdb}&query=${encodeURIComponent(m.title)}${y}`);
     const hit=(await r.json()).results?.[0];
     if(!hit){S.tmdbMeta[m.title]=null;await saveOne('tmdbMeta');return null}
-    const d=await(await fetch(`https://api.themoviedb.org/3/movie/${hit.id}?api_key=${S.keys.tmdb}&append_to_response=videos`)).json();
+    const d=await(await fetch(`https://api.themoviedb.org/3/movie/${hit.id}?api_key=${S.keys.tmdb}&append_to_response=videos,credits,watch%2Fproviders`)).json();
     const vids=d.videos?.results||[];
     const tr=vids.find(v=>v.site==='YouTube'&&v.type==='Trailer'&&v.official)||vids.find(v=>v.site==='YouTube'&&v.type==='Trailer')||vids.find(v=>v.site==='YouTube');
     const meta={poster:d.poster_path?`https://image.tmdb.org/t/p/w342${d.poster_path}`:'',
@@ -688,8 +807,12 @@ async function tmdbMovieMeta(m){
       rating:d.vote_average?+d.vote_average.toFixed(1):null,
       genres:(d.genres||[]).map(g=>g.name).slice(0,3),
       overview:(d.overview||'').slice(0,420),runtime:d.runtime||null,
-      date:d.release_date||'',trailer:tr?tr.key:''};
+      date:d.release_date||'',trailer:tr?tr.key:'',tmdbId:hit.id,
+      cast:(d.credits?.cast||[]).slice(0,14).map(c=>({n:c.name||'',c:c.character||'',img:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''})),
+      prov:provPick(d['watch/providers']||{results:{}})};
+    if(meta.prov.length)S.prov['m'+m.id]=meta.prov;
     S.tmdbMeta[m.title]=meta;
+    if(meta.date&&!m.releaseDate){m.releaseDate=meta.date;await saveOne('movies')}
     if(meta.poster)S.tmdbPosters[m.title]=meta.poster.replace('w342','w185');
     await saveOne('tmdbMeta');await saveOne('tmdbPosters');
     return meta;
@@ -725,6 +848,7 @@ function vMovie(id){
       :`<button class="cta" onclick="tgMovie('${id.replace(/'/g,"\\'")}')">Mark as watched</button>`}
     ${meta?.trailer?`<a class="cta sub" style="margin-top:10px" href="https://www.youtube.com/watch?v=${meta.trailer}" target="_blank" rel="noopener">▶ Watch trailer</a>`:''}
     ${meta?.overview?`<div class="set" style="margin-top:16px"><h3>About</h3><p>${esc(meta.overview)}</p></div>`:''}
+    ${castRow(meta?.cast)}
     ${!S.keys.tmdb?'<div class="set" style="margin-top:16px"><p>Add a free TMDB key in Settings to load poster, rating, genres and synopsis here.</p></div>':''}
     <button class="btn danger" style="width:100%;margin-top:16px" onclick="rmMovie('${id.replace(/'/g,"\\'")}')">Remove from library</button>
   </div>`;
@@ -734,57 +858,150 @@ window.tgMovie=async id=>{
   const m=S.movies[id];if(!m)return;
   if(m.status==='watched'){m.status='watchlist';m.watchDate=null;toast('Moved to watchlist')}
   else{m.status='watched';m.watchDate=new Date().toISOString().slice(0,10);toast('Watched ✓')}
-  await saveOne('movies');
-  const el=$('#mvbody');
-  if(el&&route().r==='movies')el.innerHTML=moviesBody();else render(false);
+  await saveOne('movies');render(false);
 };
 
-let srchQ='',srchRes=[],srchBusy=false,_srchT=null;
-function srchResults(){
-  if(srchBusy)return'<div class="empty">Searching…</div>';
-  const out=srchRes.map((x,i)=>{
-    const j=x.show,tvdb=j.externals?.thetvdb;
-    const have=tvdb&&S.shows[tvdb];
-    return `<div class="mrow">
-      <div class="mp">${j.image?`<img src="${j.image.medium}">`:'📺'}</div>
-      <div class="mi"><div class="mt">${esc(j.name)}</div>
-      <div class="ms">${(j.premiered||'').slice(0,4)}${j.network?.name?' · '+esc(j.network.name):''}${j.rating?.average?' · ★'+j.rating.average:''}</div></div>
-      ${have?`<a class="btn" href="#/show/${tvdb}">Open</a>`
-        :`<button class="btn gold" onclick="addShowIdx(${i})">+ Add</button>`}
-    </div>`}).join('');
-  if(srchQ.length>=2&&!srchRes.length)return'<div class="empty">No results.</div>';
-  if(!srchQ)return'<div class="empty"><div class="big">⌕</div>Find any show and add it to your library.</div>';
-  return out;
+let srchQ='',srchRes=[],srchBusy=false,_srchT=null,srchSeg='all',SQ={genre:'all'},suggCache={};
+window.setSrchSeg=v=>{srchSeg=v;render(false);loadSugg()};
+window.setSQ=(k,v)=>{SQ[k]=v;render(false);loadSugg()};
+
+async function loadSugg(){
+  if(!S.keys.tmdb||srchQ)return;
+  const key=srchSeg;
+  if(suggCache[key]&&Date.now()-suggCache[key].at<3600e3){paintSugg();return}
+  try{
+    let items=[];
+    if(key==='all'){
+      const j=await tmdbFetch('/trending/all/week');
+      items=(j.results||[]).filter(x=>x.media_type==='movie'||x.media_type==='tv');
+    }else if(key==='shows'){
+      const j=await tmdbFetch('/trending/tv/week');
+      items=(j.results||[]).map(x=>({...x,media_type:'tv'}));
+    }else{
+      const j=await tmdbFetch('/trending/movie/week');
+      items=(j.results||[]).map(x=>({...x,media_type:'movie'}));
+    }
+    suggCache[key]={at:Date.now(),items:items.slice(0,18)};
+    paintSugg();
+  }catch(e){}
 }
+function suggCards(){
+  const c=suggCache[srchSeg];
+  if(!c)return S.keys.tmdb?'<div class="empty">Loading suggestions…</div>':'<div class="empty">Add your TMDB key in Settings to see trending suggestions.</div>';
+  let items=c.items;
+  if(SQ.genre!=='all')items=items.filter(x=>(x.genre_ids||[]).some(g=>TMDB_GENRES[g]===SQ.genre));
+  if(!items.length)return'<div class="empty">Nothing trending matches this genre.</div>';
+  return `<div class="sec"><h2>Trending this week</h2></div><div class="grid">${items.map((x,i)=>{
+    const t=x.media_type==='tv'?(x.name||''):(x.title||'');
+    const img=x.poster_path?`https://image.tmdb.org/t/p/w342${x.poster_path}`:'';
+    const inLib=x.media_type==='movie'
+      ? Object.values(S.movies).some(m=>m.title.toLowerCase()===t.toLowerCase())
+      : Object.values(S.shows).some(s=>s.title.toLowerCase()===t.toLowerCase());
+    return `<div class="pc" onclick="suggAdd(${i})">
+      ${img?`<img loading="lazy" src="${img}">`:`<div class="ph">${esc(t)}</div>`}
+      <span class="pill tag">${x.media_type==='tv'?'TV':'Film'}${x.vote_average?` ★${(+x.vote_average).toFixed(1)}`:''}</span>
+      <span class="pill ${inLib?'green':'gold'} fav" style="top:auto;bottom:7px;right:7px">${inLib?'✓':'+'}</span>
+    </div>`}).join('')}</div>`;
+}
+function paintSugg(){const el=$('#srchres');if(el&&!srchQ)el.innerHTML=suggCards()}
+window.suggAdd=async i=>{
+  const c=suggCache[srchSeg];const x=c?.items.filter(y=>SQ.genre==='all'||(y.genre_ids||[]).some(g=>TMDB_GENRES[g]===SQ.genre))[i];
+  if(!x)return;
+  if(x.media_type==='movie')await quickAddMovie(x.title,x.release_date,x.id);
+  else await quickAddTv(x.name,x.id);
+  paintSugg();
+};
+async function quickAddMovie(title,rel,tmdbId){
+  const ex=Object.values(S.movies).find(m=>m.title.toLowerCase()===(title||'').toLowerCase());
+  if(ex){location.hash='#/movie/'+encodeURIComponent(ex.id);return}
+  const id='tmdb_'+tmdbId;
+  S.movies[id]={id,title,status:'watchlist',watchDate:null,releaseDate:(rel||'').slice(0,10)||null,runtime:null,rewatch:0};
+  await saveOne('movies');toast(`${title} → watchlist`);
+  if(S.keys.tmdb)tmdbMovieMeta(S.movies[id]);
+}
+async function quickAddTv(name,tmdbId){
+  const ex=Object.values(S.shows).find(s=>s.title.toLowerCase()===(name||'').toLowerCase());
+  if(ex){location.hash='#/show/'+ex.id;return}
+  let tvdb=0;
+  try{const j=await tmdbFetch(`/tv/${tmdbId}/external_ids`);tvdb=j.tvdb_id||0}catch(e){}
+  if(!tvdb){ // fallback via tvmaze name search
+    try{const r=await fetch(`${TVM}/singlesearch/shows?q=${encodeURIComponent(name)}`);
+      if(r.ok){const j=await r.json();tvdb=j.externals?.thetvdb||('m_'+j.id)}}catch(e){}
+  }
+  if(!tvdb){toast('Could not match this show');return}
+  await addShow(JSON.stringify({tvdb,name,mid:0}));
+}
+
+function srchResults(){
+  if(!srchQ)return suggCards();
+  if(srchBusy)return'<div class="empty">Searching…</div>';
+  if(!srchRes.length)return srchQ.length>=2?'<div class="empty">No results.</div>':suggCards();
+  return srchRes.map((x,i)=>{
+    const tv=x._type==='tv';
+    const img=x.poster_path?`https://image.tmdb.org/t/p/w185${x.poster_path}`:(x.image?.medium||'');
+    const yr=((tv?x.first_air_date:x.release_date)||x.premiered||'').slice(0,4);
+    const title=tv?(x.name||''):(x.title||x.name||'');
+    const inLib=tv?Object.values(S.shows).some(s=>s.title.toLowerCase()===title.toLowerCase())
+      :Object.values(S.movies).some(m=>m.title.toLowerCase()===title.toLowerCase());
+    return `<div class="mrow">
+      <div class="mp">${img?`<img src="${img}">`:tv?'📺':'🎬'}</div>
+      <div class="mi"><div class="mt">${esc(title)}</div>
+      <div class="ms">${tv?'TV':'Film'}${yr?' · '+yr:''}${x.vote_average?' · ★'+(+x.vote_average).toFixed(1):''}</div></div>
+      <button class="btn ${inLib?'':'gold'}" onclick="srchAdd(${i})">${inLib?'Open':'+ Add'}</button>
+    </div>`}).join('');
+}
+window.srchAdd=async i=>{
+  const x=srchRes[i];if(!x)return;
+  if(x._type==='tv')await quickAddTv(x.name,x.id);
+  else await quickAddMovie(x.title,x.release_date,x.id);
+  const el=$('#srchres');if(el)el.innerHTML=srchResults();
+};
 window.onSrchInput=v=>{
   srchQ=v;
   clearTimeout(_srchT);
-  if(v.length<2){srchRes=[];const el=$('#srchres');if(el)el.innerHTML=srchResults();return}
+  const el=$('#srchres');
+  if(v.length<2){srchRes=[];if(el)el.innerHTML=srchResults();return}
+  if(srchSeg!=='all'){srchSeg='all';const seg=$('#srchseg');if(seg)seg.outerHTML=srchSegHtml()}
   _srchT=setTimeout(async()=>{
-    srchBusy=true;const el=$('#srchres');if(el)el.innerHTML=srchResults();
-    try{const r=await fetch(`${TVM}/search/shows?q=${encodeURIComponent(v)}`);srchRes=(await r.json()).slice(0,12)}catch(e){srchRes=[]}
+    srchBusy=true;if($('#srchres'))$('#srchres').innerHTML=srchResults();
+    try{
+      if(S.keys.tmdb){
+        const j=await tmdbFetch(`/search/multi?query=${encodeURIComponent(v)}`);
+        srchRes=(j.results||[]).filter(x=>x.media_type==='movie'||x.media_type==='tv')
+          .map(x=>({...x,_type:x.media_type})).slice(0,15);
+      }else{
+        const r=await fetch(`${TVM}/search/shows?q=${encodeURIComponent(v)}`);
+        srchRes=(await r.json()).slice(0,12).map(x=>({...x.show,_type:'tv'}));
+      }
+    }catch(e){srchRes=[]}
     srchBusy=false;const el2=$('#srchres');if(el2)el2.innerHTML=srchResults();
   },380);
 };
+function srchSegHtml(){
+  return `<span id="srchseg" style="display:contents">${segSlider(srchSeg,'setSrchSeg')}</span>`;
+}
 function vSearch(){
-  return `<header class="hdr"><div class="name">Search</div></header>
-  <div class="srch"><input placeholder="Search TV shows…" value="${esc(srchQ)}" oninput="onSrchInput(this.value)"></div>
+  setTimeout(loadSugg,50);
+  return `<header class="hdr"><div class="name">Search</div>${srchSegHtml()}</header>
+  <div class="filters" style="margin-top:0">
+    <select onchange="setSQ('genre',this.value)">
+      <option value="all">Genre: All</option>
+      ${[...new Set(Object.values(TMDB_GENRES))].sort().map(g=>`<option ${SQ.genre===g?'selected':''}>${g}</option>`).join('')}
+    </select>
+  </div>
+  <div class="srch"><input placeholder="Search shows & movies…" value="${esc(srchQ)}" oninput="onSrchInput(this.value)"></div>
   <div id="srchres">${srchResults()}</div>`;
 }
-window.addShowIdx=async i=>{
-  const j=srchRes[i]?.show;if(!j)return;
-  await addShow(JSON.stringify({tvdb:j.externals?.thetvdb||('m_'+j.id),name:j.name,mid:j.id}));
-  const el=$('#srchres');if(el)el.innerHTML=srchResults();
-};
+window.addShowIdx=async i=>{};
 window.addShow=async pk=>{
   const p=JSON.parse(pk);
   S.shows[p.tvdb]={id:''+p.tvdb,title:p.name,followed:true,favorite:false,userStatus:'plan',addedAt:new Date().toISOString(),archived:false};
   const full=await tvmLookup(p.tvdb);
   S.tvm[p.tvdb]=full||{mid:p.mid,img:'',imgBig:'',status:'',premiered:'',genres:[],network:'',rating:null};
-  if(!full){const r=await fetch(`${TVM}/shows/${p.mid}`);if(r.ok)S.tvm[p.tvdb]=normTvm(await r.json())}
-  await save();toast(`${p.name} added`);render(false);
+  if(!full&&p.mid){const r=await fetch(`${TVM}/shows/${p.mid}`);if(r.ok)S.tvm[p.tvdb]=normTvm(await r.json())}
+  await save();toast(`${p.name} added`);
+  location.hash='#/show/'+p.tvdb;
 };
-
 function vSettings(){
   const nShows=Object.keys(S.shows).length,nMov=Object.keys(S.movies).length;
   const matched=Object.keys(S.shows).filter(id=>S.tvm[id]).length;
@@ -809,9 +1026,9 @@ function vSettings(){
   <div class="set"><h3>Danger zone</h3>
     <div class="btnrow"><button class="btn danger" onclick="wipe()">Erase everything</button></div>
   </div>
-  <p style="font-size:10.5px;color:var(--tx3);text-align:center;padding:8px 0 20px">Watchlog · your data lives only on this device · back up often</p>`;
+  <p style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 20px">Watchlog · your data lives only on this device · back up often</p>`;
 }
-window.setKey=async(k,v)=>{S.keys[k]=v.trim();await saveOne('keys');if(k==='tmdb'&&v.trim()){toast('Fetching movie posters…');tmdbMatch()}};
+window.setKey=async(k,v)=>{S.keys[k]=v.trim();await saveOne('keys');if(k==='tmdb'&&v.trim()){toast('Fetching movie data…');tmdbMatch();setTimeout(providerMatch,3000)}};
 window.pickFile=()=>$('#filezip').click();
 window.wipe=async()=>{
   if(!confirm('Erase all local data? Export a backup first if unsure.'))return;
@@ -830,8 +1047,7 @@ async function render(scroll=true){
   const app=$('#app');
   if(r==='show'){app.innerHTML=await vShow(arg)}
   else if(r==='movie'){app.innerHTML=vMovie(decodeURIComponent(arg||''))}
-  else if(r==='shows'){app.innerHTML=vShows()}
-  else if(r==='movies'){app.innerHTML=vMovies()}
+  else if(r==='list'||r==='shows'||r==='movies'){app.innerHTML=vList()}
   else if(r==='search'){app.innerHTML=vSearch()}
   else if(r==='gear'){app.innerHTML=vSettings();bindDrop()}
   else{app.innerHTML=vHome()}
@@ -855,13 +1071,13 @@ function handleFile(f){
 /* ============ boot ============ */
 (async()=>{
   await DB.open();
-  for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters','prefs','tmdbMeta']){
+  for(const k of ['shows','watched','movies','epRatings','movieRatings','tvm','keys','tmdbPosters','prefs','tmdbMeta','prov']){
     const v=await DB.get(k);if(v)S[k]=v;
   }
   S.loaded=Object.keys(S.shows).length>0;
   if(!S.loaded)location.hash='#/gear';
   await render();
-  if(S.loaded){backgroundMatch();if(S.keys.tmdb)tmdbMatch()}
+  if(S.loaded){backgroundMatch();if(S.keys.tmdb){tmdbMatch();setTimeout(providerMatch,4000)}}
 })();
 </script>
 </body>
