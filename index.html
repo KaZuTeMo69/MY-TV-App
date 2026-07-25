@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#171310">
 <title>Watchlog</title>
+<script>window.APP_VERSION='v2.3';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -116,6 +117,7 @@ img{display:block}
 /* episode thumbs */
 .ep .th{width:58px;height:33px;border-radius:6px;overflow:hidden;background:var(--card2);flex:0 0 auto}
 .ep .th img{width:100%;height:100%;object-fit:cover}
+.ep .th-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:13px}
 .epdate{font-size:11.5px;font-weight:600;color:var(--amber);white-space:nowrap;flex:0 0 auto}
 /* month group header */
 .mgh{font-size:12px;color:var(--gold);margin:18px 2px 8px;letter-spacing:.06em;text-transform:uppercase}
@@ -220,12 +222,13 @@ const watchedCount = id => Object.keys(S.watched[id]||{}).length;
 const lastWatch = id => Object.values(S.watched[id]||{}).reduce((a,x)=>x.d>a?x.d:a,'');
 const fmtMin = m=>{if(!m)return'';const h=Math.floor(m/60);return h>=1?`${h}h ${m%60}m`:`${m}m`};
 const _today=()=>new Date().toISOString().slice(0,10);
+const epFuture=e=>!!e.air && e.air>_today();  // live check, never trust a cached snapshot
 
 function showState(sh){
   const tv=S.tvm[sh.id], wc=watchedCount(sh.id);
   if(sh.userStatus==='later') return 'onhold';
   if(sh.userStatus==='plan'&&!wc) return 'plan';
-  if(tv&&tv.eps&&wc>=tv.eps.filter(e=>!e.future).length&&wc>0){
+  if(tv&&tv.eps&&wc>=tv.eps.filter(e=>!epFuture(e)).length&&wc>0){
     return tv.status==='Ended'?'completed':(nextEp(sh.id)?'watching':'uptodate');
   }
   if(sh.archived) return 'onhold';
@@ -235,11 +238,11 @@ function showState(sh){
 function nextEp(id){
   const tv=S.tvm[id]; if(!tv||!tv.eps) return null;
   const w=S.watched[id]||{};
-  return tv.eps.find(e=>!e.future && !w[epKey(e.s,e.e)])||null;
+  return tv.eps.find(e=>!epFuture(e) && !w[epKey(e.s,e.e)])||null;
 }
 function upcomingEp(id){
   const tv=S.tvm[id]; if(!tv||!tv.eps) return null;
-  const up=tv.eps.find(e=>e.future);
+  const up=tv.eps.find(e=>epFuture(e));
   if(!up) return null;
   const days=Math.ceil((new Date(up.air)-new Date())/864e5);
   return {...up,days};
@@ -292,8 +295,7 @@ async function tvmEpisodes(mid){
   try{
     const r=await fetch(`${TVM}/shows/${mid}/episodes`);
     if(!r.ok) return null;
-    const today=new Date().toISOString().slice(0,10);
-    return (await r.json()).map(e=>({s:e.season,e:e.number,name:e.name||'',air:e.airdate||'',img:e.image?.medium||'',future:!!e.airdate&&e.airdate>today}));
+    return (await r.json()).map(e=>({s:e.season,e:e.number,name:e.name||'',air:e.airdate||'',img:e.image?.medium||''}));
   }catch(e){return null}
 }
 async function tvTrailer(id){
@@ -315,7 +317,11 @@ async function tvTrailer(id){
 }
 async function ensureEpisodes(id){
   const tv=S.tvm[id]; if(!tv||!tv.mid) return false;
-  if(tv.eps && tv.eps[0] && tv.eps[0].img!==undefined && Date.now()-(tv.epsAt||0) < 86400e3*3) return true;
+  if(tv.eps && tv.eps[0] && tv.eps[0].img!==undefined){
+    const soon=tv.eps.some(e=>e.air && e.air>=_today() && (new Date(e.air)-new Date())/864e5<=2);
+    const maxAge=soon?3600e3*6:86400e3*3;
+    if(Date.now()-(tv.epsAt||0) < maxAge) return true;
+  }
   const eps=await tvmEpisodes(tv.mid);
   if(eps){tv.eps=eps;tv.epsAt=Date.now();await saveOne('tvm');return true}
   return !!tv.eps;
@@ -574,7 +580,7 @@ function vHome(){
   ];
   const hero=active.slice(0,10).map(s=>{
     const tv=S.tvm[s.id],nx=nextEp(s.id),up=upcomingEp(s.id),nw=newEp(s.id),wc=watchedCount(s.id);
-    const tot=tv?.eps?tv.eps.filter(e=>!e.future).length:0;
+    const tot=tv?.eps?tv.eps.filter(e=>!epFuture(e)).length:0;
     return `<a class="hcard" href="#/show/${s.id}">
       ${tv?.img?`<img loading="lazy" src="${tv.imgBig||tv.img}">`:`<div class="ph">${esc(s.title)}</div>`}
       <div class="ov"><div class="t">${esc(s.title)}</div>
@@ -599,7 +605,7 @@ function vHome(){
 
 function showRow(sh){
   const tv=S.tvm[sh.id],wc=watchedCount(sh.id);
-  const tot=tv?.eps?tv.eps.filter(e=>!e.future).length:0;
+  const tot=tv?.eps?tv.eps.filter(e=>!epFuture(e)).length:0;
   const nx=nextEp(sh.id),up=upcomingEp(sh.id),nw=newEp(sh.id);
   const sub=[tot?`${wc}/${tot}`:wc?`${wc} eps`:'',
     nw?`NEW S${nw.s} E${nw.e}`:nx?`next S${nx.s} E${nx.e}`:up?`new ep ${fmtDate(up.air)}`:'',
@@ -715,7 +721,7 @@ async function vShow(id){
   if(tv&&tv.trailer===undefined&&S.keys.tmdb){tvTrailer(id)}
   if(tv&&tv.cast===undefined){tvmCast(id)}
   const w=S.watched[id]||{},wc=Object.keys(w).length;
-  const eps=tv?.eps||[],aired=eps.filter(e=>!e.future),tot=aired.length;
+  const eps=tv?.eps||[],aired=eps.filter(e=>!epFuture(e)),tot=aired.length;
   const nx=nextEp(id);
   const seasons={};eps.forEach(e=>{(seasons[e.s]=seasons[e.s]||[]).push(e)});
   if(openSeason===null){openSeason=nx?nx.s:(aired.length?aired[aired.length-1].s:null)}
@@ -750,11 +756,13 @@ async function vShow(id){
         <span>Season ${sn}</span><span class="cnt">${seen}/${se.length} ${open?'▾':'▸'}</span></button>
         ${open?`<div class="eps">${se.map(e=>{
           const k=epKey(e.s,e.e),ww=w[k];
-          return `<div class="ep ${ww?'seen':''}" ${e.future?'':`onclick="tgEp('${id}',${e.s},${e.e})"`}>
-            <div class="th">${e.img?`<img loading="lazy" src="${e.img}">`:''}</div>
+          const efut=epFuture(e);
+          const thimg=e.img||tv?.img||'';
+          return `<div class="ep ${ww?'seen':''}" ${efut?'':`onclick="tgEp('${id}',${e.s},${e.e})"`}>
+            <div class="th">${thimg?`<img loading="lazy" src="${thimg}">`:'<div class=\'th-ph\'>▭</div>'}</div>
             <span class="num">E${e.e}</span><span class="nm">${esc(e.name)||''}</span>
             ${ww&&ww.n>1?`<span class="rw">×${ww.n}</span>`:''}
-            ${e.future?`<span class="epdate">${fmtDate(e.air)}</span>`:'<span class="check">✓</span>'}</div>`}).join('')}</div>`:''}
+            ${efut?`<span class="epdate">${fmtDate(e.air)}</span>`:'<span class="check">✓</span>'}</div>`}).join('')}</div>`:''}
       </div>`}).join('')||(tv?'<div class="empty">Episode list loading…</div>':'<div class="empty">No online match yet for this title.<br>Artwork and episodes appear once matching finishes.</div>')}
     ${tv?.summary?`<div class="set" style="margin-top:14px"><h3>About</h3><p>${esc(tv.summary)}…</p></div>`:''}
     ${castRow(tv?.cast)}
@@ -1161,7 +1169,7 @@ function vSettings(){
   <div class="set"><h3>Danger zone</h3>
     <div class="btnrow"><button class="btn danger" onclick="wipe()">Erase everything</button></div>
   </div>
-  <p style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 20px">Watchlog · your data lives only on this device · back up often</p>`;
+  <p style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 20px">Watchlog ${window.APP_VERSION} · your data lives only on this device · back up often</p>`;
 }
 window.setKey=async(k,v)=>{S.keys[k]=v.trim();await saveOne('keys');if(k==='tmdb'&&v.trim()){toast('Fetching movie data…');tmdbMatch();setTimeout(providerMatch,3000)}};
 window.pickFile=()=>$('#filezip').click();
