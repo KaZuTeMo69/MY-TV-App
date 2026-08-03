@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#171310">
 <title>Watchlog</title>
-<script>window.APP_VERSION='v2.3';</script>
+<script>window.APP_VERSION='v2.5';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -27,7 +27,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(1200px
 h1,h2,h3{font-weight:600;letter-spacing:-.02em}
 button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
 a{color:inherit;text-decoration:none}
-input,select{font-family:inherit;font-size:15px;color:var(--tx);background:var(--card);border:1px solid #3a3128;border-radius:var(--r-sm);padding:12px 14px;width:100%;outline:none}
+input,select{font-family:inherit;font-size:16px;color:var(--tx);background:var(--card);border:1px solid #3a3128;border-radius:var(--r-sm);padding:12px 14px;width:100%;outline:none}
 input:focus{border-color:var(--gold-dim)}
 img{display:block}
 ::-webkit-scrollbar{display:none}
@@ -40,7 +40,7 @@ img{display:block}
 .hdr .badge b{color:var(--gold)}
 
 /* segmented slider */
-.seg{position:relative;display:flex;background:var(--card);border-radius:999px;padding:4px;border:1px solid #352c22;flex:1;max-width:250px;margin:0 10px}
+.seg{position:relative;display:flex;background:var(--card);border-radius:999px;padding:4px;border:1px solid #352c22;flex:1;min-width:0;max-width:250px;margin:0 8px}
 .seg button{position:relative;z-index:2;flex:1;padding:10px 4px;font-size:11.5px;font-weight:700;color:var(--tx2);border-radius:999px;white-space:nowrap;transition:color .2s}
 .seg button.on{color:#221a10}
 .seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);background:linear-gradient(135deg,#e5c186,#c99f58);border-radius:999px;transition:transform .25s cubic-bezier(.3,.7,.4,1);z-index:1}
@@ -121,7 +121,8 @@ img{display:block}
 .epdate{font-size:11.5px;font-weight:600;color:var(--amber);white-space:nowrap;flex:0 0 auto}
 /* month group header */
 .mgh{font-size:12px;color:var(--gold);margin:18px 2px 8px;letter-spacing:.06em;text-transform:uppercase}
-.viewtg{width:46px;height:46px;border-radius:14px;background:var(--card);border:1px solid #3a3128;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--tx2)}
+.viewtg{width:46px;height:46px;border-radius:14px;background:var(--card);border:1px solid #3a3128;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--tx2);flex:0 0 auto}
+.viewtg.on{background:var(--gold-soft);border-color:var(--gold-dim);color:var(--gold)}
 /* movies list */
 .mrow{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:var(--r-sm);padding:10px;margin-bottom:10px}
 .mrow .mp{width:52px;height:74px;border-radius:9px;background:var(--card2);overflow:hidden;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--tx3)}
@@ -132,9 +133,14 @@ img{display:block}
 .mrow .act{flex:0 0 auto}
 
 .filters{display:flex;gap:8px;margin:12px 0;overflow-x:auto}
-.filters select{flex:1;min-width:110px;padding:13px 11px;border-radius:12px;background:var(--card);border:1px solid #3a3128;color:var(--tx);font-size:12.5px;font-weight:600;appearance:none}
+.filters select{flex:1;min-width:120px;padding:11px 10px;border-radius:12px;background:var(--card);border:1px solid #3a3128;color:var(--tx);font-size:16px;font-weight:600;appearance:none;text-overflow:ellipsis}
 /* search */
 .srch{position:sticky;top:0;background:linear-gradient(var(--bg) 75%,transparent);padding:14px 0 10px;z-index:5}
+.srch .sw{position:relative}
+.srch .sw input{padding-right:46px}
+.srch .clr{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--tx3);background:var(--card2)}
+.srch .clr:active{color:var(--tx)}
 
 /* settings */
 .set{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:14px}
@@ -574,10 +580,11 @@ function vHome(){
     .sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id))).slice(0,12);
   const eps=Object.values(S.watched).reduce((a,w)=>a+Object.keys(w).length,0);
   const mv=Object.values(S.movies).filter(m=>m.status==='watched').length;
-  const favs=[
-    ...Object.values(S.shows).filter(s=>s.favorite).map(posterCard),
-    ...Object.values(S.movies).filter(m=>m.favorite).map(movieCard)
+  const favItems=[
+    ...Object.values(S.shows).filter(s=>s.favorite).map(s=>posterCard(s)),
+    ...Object.values(S.movies).filter(m=>m.favorite).map(m=>movieCard(m))
   ];
+  const favs=favItems.slice(0,12);
   const hero=active.slice(0,10).map(s=>{
     const tv=S.tvm[s.id],nx=nextEp(s.id),up=upcomingEp(s.id),nw=newEp(s.id),wc=watchedCount(s.id);
     const tot=tv?.eps?tv.eps.filter(e=>!epFuture(e)).length:0;
@@ -599,7 +606,7 @@ function vHome(){
       <span class="pill amber tag">${fmtDate(up.air)}</span></a>`}).join('')}</div>`:''}
   <div class="sec"><h2>Recently watched</h2></div>
   <div class="row-scroll">${recent.map(posterCard).join('')||'<div class="empty">—</div>'}</div>
-  ${favs.length?`<div class="sec"><h2>Favorites</h2></div>
+  ${favs.length?`<div class="sec"><h2>Favorites</h2><span class="all" onclick="goFavs()">See all</span></div>
   <div class="row-scroll">${favs.join('')}</div>`:''}`;
 }
 
@@ -616,7 +623,7 @@ function showRow(sh){
     <div class="ms">${sub}</div></div>
   </a>`;
 }
-let LQ={seg:'all',status:'all',screen:'all',genre:'all'};
+let LQ={seg:'all',status:'all',screen:'all',genre:'all',fav:false};
 window.setSeg=v=>{
   LQ.seg=v;
   if(v==='movies'&&['watching','uptodate','later'].includes(LQ.status))LQ.status='all';
@@ -632,6 +639,10 @@ window.setSeg=v=>{
   render(false)};
 window.setLQ=(k,v)=>{LQ[k]=v;render(false)};
 window.setLView=v=>{S.prefs.listView=v;saveOne('prefs');render(false)};
+window.goFavs=()=>{
+  LQ={seg:'all',status:'all',screen:'all',genre:'all',fav:true};
+  if(location.hash==='#/list')render();else location.hash='#/list';
+};
 
 function segSlider(cur,setter){
   const opts=[['all','All'],['shows','Shows'],['movies','Movies']];
@@ -668,6 +679,7 @@ function vList(){
   // apply filters
   if(LQ.status!=='all')items=items.filter(it=>uniState(it).includes(LQ.status));
   if(LQ.genre!=='all')items=items.filter(it=>itemGenres(it).includes(LQ.genre));
+  if(LQ.fav)items=items.filter(it=>it.favorite);
   if(LQ.screen==='__other')items=items.filter(it=>{const ps=itemProv(it);return ps.length&&ps.every(p=>!topSet.has(p.n))});
   else if(LQ.screen!=='all')items=items.filter(it=>itemProv(it).some(p=>p.n===LQ.screen));
   // sort
@@ -686,7 +698,10 @@ function vList(){
   const provLogo=n=>{for(const it of libItems()){const p=itemProv(it).find(x=>x.n===n&&x.l);if(p)return p.l}return''};
   return `<header class="hdr"><div class="name">My List</div>
     ${segSlider(LQ.seg,'setSeg')}
-    <button class="viewtg" onclick="setLView('${grid?'list':'grid'}')">${grid?'☰':'▦'}</button></header>
+    <div style="display:flex;gap:8px;flex:0 0 auto">
+      <button class="viewtg ${LQ.fav?'on':''}" onclick="setLQ('fav',${LQ.fav?'false':'true'})" aria-label="Favorites only">${LQ.fav?'★':'☆'}</button>
+      <button class="viewtg" onclick="setLView('${grid?'list':'grid'}')">${grid?'☰':'▦'}</button>
+    </div></header>
   <div class="chips">
     ${statOpts.map(([k,l])=>`<button class="chip ${LQ.status===k?'on':''}" onclick="setLQ('status','${k}')">${l}</button>`).join('')}
   </div>
@@ -799,13 +814,20 @@ window.rmShow=async id=>{
   const wc=watchedCount(id);
   if(!confirm(`Remove "${sh.title}"${wc?` and its ${wc} watched episodes`:''} from your library? This cannot be undone (except via backup).`))return;
   delete S.shows[id];delete S.watched[id];delete S.tvm[id];
+  delete S.tvm['miss_'+id];delete S.prov['s'+id];
+  S.epRatings=S.epRatings.filter(r=>r.show!==sh.title);
   await save();toast('Removed');go('list');
 };
 window.rmMovie=async id=>{
   const m=S.movies[id];if(!m)return;
   if(!confirm(`Remove "${m.title}" from your library? This cannot be undone (except via backup).`))return;
   delete S.movies[id];
-  await saveOne('movies');toast('Removed');go('list');
+  delete S.prov['m'+id];
+  // title-keyed caches are shared, so only drop them if no other movie uses that title
+  if(!Object.values(S.movies).some(x=>x.title===m.title)){
+    delete S.tmdbMeta[m.title];delete S.tmdbPosters[m.title];delete S.movieRatings[m.title];
+  }
+  await save();toast('Removed');go('list');
 };
 
 function movieRow(m){
@@ -827,7 +849,8 @@ function movieCard(m){
   const tag=m.status==='watched'?'<span class="pill green tag">✓</span>'
     :up?`<span class="pill amber tag">${fmtDate(m.releaseDate)}</span>`:'';
   return `<a class="pc" href="#/movie/${encodeURIComponent(m.id)}">
-    ${p?`<img loading="lazy" src="${p}">`:`<div class="ph">${esc(m.title)}</div>`}${tag}</a>`;
+    ${p?`<img loading="lazy" src="${p}">`:`<div class="ph">${esc(m.title)}</div>`}
+    ${tag}${m.favorite?'<span class="fav">★</span>':''}</a>`;
 }
 async function tmdbMovieMeta(m){
   if(!S.keys.tmdb)return null;
@@ -1031,6 +1054,7 @@ window.srchAdd=async i=>{
 };
 window.onSrchInput=v=>{
   srchQ=v;
+  const clr=$('#srchclr');if(clr)clr.style.display=v?'flex':'none';
   clearTimeout(_srchT);
   const el=$('#srchres');
   if(v.length<2){srchRes=[];if(el)el.innerHTML=srchResults();return}
@@ -1050,6 +1074,11 @@ window.onSrchInput=v=>{
     srchBusy=false;const el2=$('#srchres');if(el2)el2.innerHTML=srchResults();
   },380);
 };
+window.clearSrch=()=>{
+  const box=$('#srchbox');
+  if(box){box.value='';box.focus()}
+  onSrchInput('');
+};
 function srchSegHtml(){
   return `<span id="srchseg" style="display:contents">${segSlider(srchSeg,'setSrchSeg')}</span>`;
 }
@@ -1065,7 +1094,10 @@ function vSearch(){
       ${[...new Set(Object.values(TMDB_GENRES).map(normGenre))].sort().map(g=>`<option ${SQ.genre===g?'selected':''}>${g}</option>`).join('')}
     </select>
   </div>
-  <div class="srch"><input placeholder="Search shows & movies…" value="${esc(srchQ)}" oninput="onSrchInput(this.value)"></div>
+  <div class="srch"><div class="sw">
+    <input id="srchbox" placeholder="Search shows & movies…" value="${esc(srchQ)}" oninput="onSrchInput(this.value)">
+    <button class="clr" id="srchclr" style="display:${srchQ?'flex':'none'}" onclick="clearSrch()" aria-label="Clear search">✕</button>
+  </div></div>
   <div id="srchres">${srchResults()}</div>`;
 }
 window.addShowIdx=async i=>{};
@@ -1220,6 +1252,7 @@ function handleFile(f){
   }
   S.loaded=Object.keys(S.shows).length>0;
   if(!S.loaded)location.hash='#/gear';
+  else if(!['show','movie','preview'].includes(route().r))location.hash='#/home';
   await render();
   if(S.loaded){backgroundMatch();if(S.keys.tmdb){tmdbMatch();setTimeout(providerMatch,4000)}}
 })();
