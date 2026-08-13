@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#171310">
 <title>Watchlog</title>
-<script>window.APP_VERSION='v2.5';</script>
+<script>window.APP_VERSION='v2.6';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -91,7 +91,13 @@ img{display:block}
 .progress .bar{flex:1;height:4px;border-radius:2px;background:var(--card2);overflow:hidden}
 .progress .bar i{display:block;height:100%;background:var(--gold)}
 .cta{display:block;width:100%;text-align:center;padding:17px;border-radius:17px;background:linear-gradient(135deg,#e5c186,#c99f58);color:#221a10;font-weight:700;font-size:15px;box-shadow:0 6px 24px rgba(216,178,110,.25)}
-.cta:active{transform:scale(.985)}
+.cta:active{transform:scale(.985);transition-duration:.06s}
+/* press feedback — tap-highlight is disabled globally, so this is the only cue */
+.pc,.mrow,.chip,.btn,.viewtg,.ep,.season .sh,.nav button,.seg button,.castc,.cta{
+  transition:transform .18s cubic-bezier(.3,.7,.4,1)}
+.pc:active,.mrow:active,.chip:active,.btn:active,.viewtg:active,.ep:active,
+.season .sh:active,.nav button:active,.seg button:active,.castc:active{
+  transform:scale(.97);transition-duration:.06s}
 .cta.sub{background:var(--card);color:var(--tx);border:1px solid #3a3128;box-shadow:none;font-weight:500}
 .cta[disabled]{opacity:.45}
 
@@ -117,6 +123,10 @@ img{display:block}
 /* episode thumbs */
 .ep .th{width:58px;height:33px;border-radius:6px;overflow:hidden;background:var(--card2);flex:0 0 auto}
 .ep .th img{width:100%;height:100%;object-fit:cover}
+.ep .th-fb{position:relative;width:100%;height:100%;overflow:hidden}
+.ep .th-fb::before{content:'';position:absolute;inset:-30%;background-image:var(--fb);
+  background-size:cover;background-position:center;filter:blur(5px) brightness(.5) saturate(1.2)}
+.ep .th-fb img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain}
 .ep .th-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:13px}
 .epdate{font-size:11.5px;font-weight:600;color:var(--amber);white-space:nowrap;flex:0 0 auto}
 /* month group header */
@@ -169,7 +179,8 @@ img{display:block}
 .dropzone{border:2px dashed #4a3d2e;border-radius:var(--r);padding:36px 18px;text-align:center;color:var(--tx2);font-size:13px}
 .dropzone.over{border-color:var(--gold);background:var(--gold-soft)}
 @media(min-width:520px){.grid{grid-template-columns:repeat(4,1fr)}.hero .hcard{flex-basis:44%}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}
+  *:active{transform:none!important}}
 </style>
 </head>
 <body>
@@ -321,22 +332,35 @@ async function tvTrailer(id){
   }catch(e){}
   await saveOne('tvm');render(false);
 }
-async function ensureEpisodes(id){
+const _epBusy=new Set();
+// returns TRUE only when fresh data was actually fetched, so callers can re-render
+// without looping. Cache-hits and failures return false.
+async function ensureEpisodes(id,force){
   const tv=S.tvm[id]; if(!tv||!tv.mid) return false;
-  if(tv.eps && tv.eps[0] && tv.eps[0].img!==undefined){
-    const soon=tv.eps.some(e=>e.air && e.air>=_today() && (new Date(e.air)-new Date())/864e5<=2);
-    const maxAge=soon?3600e3*6:86400e3*3;
-    if(Date.now()-(tv.epsAt||0) < maxAge) return true;
+  if(_epBusy.has(id)) return false;
+  if(!force && tv.eps && tv.eps[0] && tv.eps[0].img!==undefined){
+    // "near air" spans 2 days before broadcast to 5 days after — TVmaze usually
+    // uploads the episode still after it airs, so the window has to cover both sides
+    const now=new Date(_today());
+    const near=tv.eps.some(e=>{if(!e.air)return false;
+      const d=(new Date(e.air)-now)/864e5; return d<=2 && d>=-5});
+    const maxAge=near?3600e3*6:86400e3*3;
+    if(Date.now()-(tv.epsAt||0) < maxAge) return false;
   }
-  const eps=await tvmEpisodes(tv.mid);
-  if(eps){tv.eps=eps;tv.epsAt=Date.now();await saveOne('tvm');return true}
-  return !!tv.eps;
+  _epBusy.add(id);
+  try{
+    const eps=await tvmEpisodes(tv.mid);
+    if(eps){tv.eps=eps;tv.epsAt=Date.now();await saveOne('tvm');return true}
+    return false;
+  } finally { _epBusy.delete(id) }
 }
 
 /* background matcher: fill tvm data for all shows */
 let matching=false;
-async function backgroundMatch(){
+async function backgroundMatch(force){
   if(matching) return; matching=true;
+  // a forced run retries titles that previously failed to match
+  if(force){for(const k in S.tvm)if(k.startsWith('miss_'))delete S.tvm[k]}
   // priority: recently-watched first, then followed, then the rest
   const prio=id=>{const s=S.shows[id];const lw=lastWatch(id);
     return (lw?'2'+lw:(s.followed?'1':'0')+'0000000000000000000')};
@@ -364,14 +388,18 @@ async function backgroundMatch(){
   matching=false; render(false);
   if(ids.length) toast('Artwork & show data updated');
   // prefetch episode lists (needed for progress %, next-up and countdowns)
+  // normal run: only shows with no episode list yet.
+  // forced run: also re-pull still-running shows, so new stills and newly aired episodes land.
   const act=Object.values(S.shows)
-    .filter(s=>(watchedCount(s.id)>0||s.followed)&&!s.archived&&S.tvm[s.id]&&!S.tvm[s.id].eps)
+    .filter(s=>(watchedCount(s.id)>0||s.followed)&&!s.archived&&S.tvm[s.id]
+      &&(force?S.tvm[s.id].status!=='Ended':!S.tvm[s.id].eps))
     .sort((a,b)=>lastWatch(b.id).localeCompare(lastWatch(a.id)));
   for(let i=0;i<act.length;i++){
-    await ensureEpisodes(act[i].id);
+    await ensureEpisodes(act[i].id,force);
     if(i%10===0)render(false);
     await new Promise(r=>setTimeout(r,520));
   }
+  if(force)toast(`Refreshed ${act.length} show${act.length===1?'':'s'}`);
   render(false);
 }
 
@@ -732,7 +760,7 @@ async function vShow(id){
   const sh=S.shows[id];
   if(!sh)return'<div class="empty">Show not found.</div>';
   const tv=S.tvm[id];
-  if(tv&&!tv.eps){ensureEpisodes(id).then(ok=>ok&&render(false))}
+  if(tv){ensureEpisodes(id).then(fresh=>fresh&&render(false))}
   if(tv&&tv.trailer===undefined&&S.keys.tmdb){tvTrailer(id)}
   if(tv&&tv.cast===undefined){tvmCast(id)}
   const w=S.watched[id]||{},wc=Object.keys(w).length;
@@ -772,9 +800,10 @@ async function vShow(id){
         ${open?`<div class="eps">${se.map(e=>{
           const k=epKey(e.s,e.e),ww=w[k];
           const efut=epFuture(e);
-          const thimg=e.img||tv?.img||'';
           return `<div class="ep ${ww?'seen':''}" ${efut?'':`onclick="tgEp('${id}',${e.s},${e.e})"`}>
-            <div class="th">${thimg?`<img loading="lazy" src="${thimg}">`:'<div class=\'th-ph\'>▭</div>'}</div>
+            <div class="th">${e.img?`<img loading="lazy" src="${e.img}" onerror="thFail(this)">`
+              :tv?.img?`<div class="th-fb" style="--fb:url('${tv.img}')"><img loading="lazy" src="${tv.img}" onerror="thFail(this)"></div>`
+              :'<div class=\'th-ph\'>▭</div>'}</div>
             <span class="num">E${e.e}</span><span class="nm">${esc(e.name)||''}</span>
             ${ww&&ww.n>1?`<span class="rw">×${ww.n}</span>`:''}
             ${efut?`<span class="epdate">${fmtDate(e.air)}</span>`:'<span class="check">✓</span>'}</div>`}).join('')}</div>`:''}
@@ -785,6 +814,7 @@ async function vShow(id){
     <button class="btn danger" style="width:100%;margin-top:10px" onclick="rmShow('${id}')">Remove from library</button>
   </div>`;
 }
+window.thFail=el=>{const th=el.closest('.th');if(th)th.innerHTML='<div class="th-ph">▭</div>'};
 window.tgSeason=sn=>{openSeason=openSeason===sn?-1:sn;render(false)};
 window.tgEp=async(id,s,e)=>{
   const k=epKey(s,e);S.watched[id]=S.watched[id]||{};
@@ -1186,7 +1216,7 @@ function vSettings(){
     <div class="btnrow">
       <button class="btn gold" onclick="pickFile()">Import TV Time zip / backup JSON</button>
       <button class="btn" onclick="exportJSON()">Export backup</button>
-      ${matching?'<button class="btn" disabled>Matching…</button>':'<button class="btn" onclick="backgroundMatch()">Re-run matching</button>'}
+      ${matching?'<button class="btn" disabled>Matching…</button>':'<button class="btn" onclick="backgroundMatch(true)">Re-run matching</button>'}
     </div>
     <div class="dropzone" id="dz" style="margin-top:12px">…or drop your <b>gdpr-data.zip</b> / backup file here</div>
   </div>
@@ -1254,6 +1284,7 @@ function handleFile(f){
   if(!S.loaded)location.hash='#/gear';
   else if(!['show','movie','preview'].includes(route().r))location.hash='#/home';
   await render();
+  document.addEventListener('touchstart',()=>{},{passive:true});
   if(S.loaded){backgroundMatch();if(S.keys.tmdb){tmdbMatch();setTimeout(providerMatch,4000)}}
 })();
 </script>
