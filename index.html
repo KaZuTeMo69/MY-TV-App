@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#171310">
 <title>Watchlog</title>
-<script>window.APP_VERSION='v2.6';</script>
+<script>window.APP_VERSION='v2.7';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -93,10 +93,10 @@ img{display:block}
 .cta{display:block;width:100%;text-align:center;padding:17px;border-radius:17px;background:linear-gradient(135deg,#e5c186,#c99f58);color:#221a10;font-weight:700;font-size:15px;box-shadow:0 6px 24px rgba(216,178,110,.25)}
 .cta:active{transform:scale(.985);transition-duration:.06s}
 /* press feedback — tap-highlight is disabled globally, so this is the only cue */
-.pc,.mrow,.chip,.btn,.viewtg,.ep,.season .sh,.nav button,.seg button,.castc,.cta{
+.pc,.mrow,.chip,.btn,.viewtg,.ep,.season .sh,.nav button,.seg button,.castc,.castmore,.crd,.cta{
   transition:transform .18s cubic-bezier(.3,.7,.4,1)}
 .pc:active,.mrow:active,.chip:active,.btn:active,.viewtg:active,.ep:active,
-.season .sh:active,.nav button:active,.seg button:active,.castc:active{
+.season .sh:active,.nav button:active,.seg button:active,.castc:active,.castmore:active,.crd:active{
   transform:scale(.97);transition-duration:.06s}
 .cta.sub{background:var(--card);color:var(--tx);border:1px solid #3a3128;box-shadow:none;font-weight:500}
 .cta[disabled]{opacity:.45}
@@ -115,11 +115,34 @@ img{display:block}
 .check{width:34px;height:34px;border-radius:11px;border:1.5px solid #463b30;display:flex;align-items:center;justify-content:center;font-size:15px;color:transparent;flex:0 0 auto}
 .ep.seen .check,.check.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 
-.castc{flex:0 0 92px;text-align:center}
-.castp{width:76px;height:76px;border-radius:50%;overflow:hidden;background:var(--card2);margin:0 auto 7px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.castc{flex:0 0 100px;background:var(--card);border-radius:14px;overflow:hidden;display:block;color:inherit}
+.castp{width:100%;height:132px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:26px}
 .castp img{width:100%;height:100%;object-fit:cover}
+.castt{padding:8px 9px 10px}
 .castn{font-size:11.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.castr{font-size:11px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.castr{font-size:11px;color:var(--tx3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.castmore{flex:0 0 100px;min-height:194px;background:var(--card);border-radius:14px;display:flex;
+  align-items:center;justify-content:center;text-align:center;color:var(--gold);font-size:12px;font-weight:600;padding:0 8px}
+/* person card */
+.phdr{display:flex;gap:14px;align-items:flex-start;margin-top:6px}
+.pimg{flex:0 0 108px;height:146px;border-radius:16px;overflow:hidden;background:var(--card2);
+  display:flex;align-items:center;justify-content:center;font-size:34px}
+.pimg img{width:100%;height:100%;object-fit:cover}
+.pmeta{flex:1;min-width:0}
+.pmeta h1{font-size:19px;line-height:1.2;margin-bottom:8px}
+.pfacts{font-size:12px;color:var(--tx3);line-height:1.55}
+.soc{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.soc a{padding:9px 14px;border-radius:11px;background:var(--card);border:1px solid #3a3128;font-size:12px;font-weight:600;color:var(--tx)}
+.bio{font-size:13px;color:var(--tx2);line-height:1.6;white-space:pre-wrap}
+.biotg{color:var(--gold);font-size:12px;font-weight:600;margin-top:8px}
+.crd{display:flex;gap:11px;align-items:center;background:var(--card);border-radius:14px;padding:9px;margin-bottom:9px;color:inherit}
+.crd .cp{flex:0 0 44px;height:62px;border-radius:8px;overflow:hidden;background:var(--card2);
+  display:flex;align-items:center;justify-content:center;font-size:15px}
+.crd .cp img{width:100%;height:100%;object-fit:cover}
+.crd .ct{flex:1;min-width:0}
+.crd .ct b{display:block;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crd .ct span{display:block;font-size:11.5px;color:var(--tx3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crd .cy{flex:0 0 auto;font-size:11.5px;color:var(--tx3)}
 /* episode thumbs */
 .ep .th{width:58px;height:33px;border-radius:6px;overflow:hidden;background:var(--card2);flex:0 0 auto}
 .ep .th img{width:100%;height:100%;object-fit:cover}
@@ -418,6 +441,17 @@ const tmdbFetch=async path=>{
   if(!r.ok)throw new Error('tmdb '+r.status);
   return r.json();
 };
+// crew payload -> directors, de-duplicated (a crew list can repeat a name per department)
+function dirList(crew){
+  const out=[],seen=new Set();
+  for(const c of (crew||[])){
+    if(c.job!=='Director'||seen.has(c.id))continue;
+    seen.add(c.id);
+    out.push({n:c.name||'',pid:c.id,img:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''});
+    if(out.length>=4)break;
+  }
+  return out;
+}
 function provPick(j){ // watch-providers payload -> [{n,l}]
   const rg=j.results?.SA||j.results?.AE||j.results?.US||{};
   const seen={},out=[];
@@ -467,13 +501,34 @@ async function providerMatch(){
   provRunning=false;render(false);
 }
 /* TVmaze cast for shows */
-async function tvmCast(id){
-  const tv=S.tvm[id];if(!tv||!tv.mid||tv.cast!==undefined)return;
-  tv.cast=[];
-  try{
-    const r=await fetch(`${TVM}/shows/${tv.mid}/cast`);
-    if(r.ok)tv.cast=(await r.json()).slice(0,14).map(c=>({n:c.person?.name||'',c:c.character?.name||'',img:c.person?.image?.medium||''}));
-  }catch(e){}
+const _castTried=new Set();
+// castv:2 means the cast entries carry TMDB person ids, so they can open a person card.
+// TVmaze has no person ids, so it stays the fallback for when there's no TMDB key.
+async function showCast(id){
+  const tv=S.tvm[id];if(!tv)return;
+  let viaTmdb=false;
+  if(S.keys.tmdb){
+    try{
+      let tid=tv.tmdbId;
+      if(!tid){
+        const j=await tmdbFetch(`/search/tv?query=${encodeURIComponent(S.shows[id]?.title||'')}`);
+        tid=j.results?.[0]?.id||0; tv.tmdbId=tid;
+      }
+      if(tid){
+        const c=await tmdbFetch(`/tv/${tid}/aggregate_credits`);
+        tv.cast=(c.cast||[]).slice(0,14).map(x=>({n:x.name||'',c:x.roles?.[0]?.character||'',pid:x.id,
+          img:x.profile_path?`https://image.tmdb.org/t/p/w185${x.profile_path}`:''}));
+        tv.castv=2; viaTmdb=true;
+      }
+    }catch(e){}
+  }
+  if(!viaTmdb && tv.cast===undefined && tv.mid){
+    try{
+      const r=await fetch(`${TVM}/shows/${tv.mid}/cast`);
+      if(r.ok)tv.cast=(await r.json()).slice(0,14).map(c=>({n:c.person?.name||'',c:c.character?.name||'',img:c.person?.image?.medium||''}));
+    }catch(e){}
+  }
+  if(tv.cast===undefined)tv.cast=[];
   await saveOne('tvm');render(false);
 }
 /* TMDB posters for movies (optional) */
@@ -748,12 +803,30 @@ function vList(){
   ${grid?`<div class="grid">${items.map(it=>it._t==='s'?posterCard(it):movieCard(it)).join('')||'<div class="empty">Nothing matches these filters.</div>'}</div>`
     :(items.map(it=>it._t==='s'?showRow(it):movieRow(it)).join('')||'<div class="empty">Nothing matches these filters.</div>')}`;
 }
+const CAST_SHOWN=8;
+let castOpen=false;
+function castCard(c){
+  const inner=`<div class="castp">${c.img?`<img loading="lazy" src="${c.img}">`:'👤'}</div>
+    <div class="castt"><div class="castn">${esc(c.n)}</div><div class="castr">${esc(c.c)}</div></div>`;
+  // only clickable when we have a TMDB person id — TVmaze-sourced cast has none
+  return c.pid?`<a class="castc" href="#/person/${c.pid}">${inner}</a>`
+              :`<div class="castc">${inner}</div>`;
+}
 function castRow(cast){
   if(!cast||!cast.length)return'';
+  const hidden=cast.length-CAST_SHOWN;
+  const shown=castOpen?cast:cast.slice(0,CAST_SHOWN);
   return `<div class="sec" style="margin-top:18px"><h2>Cast</h2></div>
-  <div class="row-scroll">${cast.map(c=>`<div class="castc">
-    <div class="castp">${c.img?`<img loading="lazy" src="${c.img}">`:'👤'}</div>
-    <div class="castn">${esc(c.n)}</div><div class="castr">${esc(c.c)}</div></div>`).join('')}</div>`;
+  <div class="row-scroll">${shown.map(castCard).join('')}
+    ${!castOpen&&hidden>0?`<button class="castmore" onclick="castOpen=true;render(false)">+ ${hidden} more</button>`:''}</div>`;
+}
+function dirRow(dir){
+  if(!dir||!dir.length)return'';
+  return `<div class="sec" style="margin-top:18px"><h2>${dir.length>1?'Directors':'Director'}</h2></div>
+  ${dir.map(d=>`<a class="crd" href="#/person/${d.pid}/d">
+    <div class="cp">${d.img?`<img loading="lazy" src="${d.img}">`:'🎬'}</div>
+    <div class="ct"><b>${esc(d.n)}</b><span>Director</span></div>
+    <span class="cy">›</span></a>`).join('')}`;
 }
 let openSeason=null;
 async function vShow(id){
@@ -762,7 +835,7 @@ async function vShow(id){
   const tv=S.tvm[id];
   if(tv){ensureEpisodes(id).then(fresh=>fresh&&render(false))}
   if(tv&&tv.trailer===undefined&&S.keys.tmdb){tvTrailer(id)}
-  if(tv&&tv.cast===undefined){tvmCast(id)}
+  if(tv&&tv.castv!==2&&!_castTried.has(id)){_castTried.add(id);showCast(id)}
   const w=S.watched[id]||{},wc=Object.keys(w).length;
   const eps=tv?.eps||[],aired=eps.filter(e=>!epFuture(e)),tot=aired.length;
   const nx=nextEp(id);
@@ -882,9 +955,13 @@ function movieCard(m){
     ${p?`<img loading="lazy" src="${p}">`:`<div class="ph">${esc(m.title)}</div>`}
     ${tag}${m.favorite?'<span class="fav">★</span>':''}</a>`;
 }
+const _metaTried=new Set();
 async function tmdbMovieMeta(m){
   if(!S.keys.tmdb)return null;
-  if(S.tmdbMeta[m.title]!==undefined)return S.tmdbMeta[m.title];
+  const have=S.tmdbMeta[m.title];
+  // cv:2 adds person ids and directors; older cached entries get upgraded lazily.
+  // null means "searched and found nothing" — don't keep retrying those.
+  if(have!==undefined&&(have===null||have.cv===2))return have;
   try{
     const y=m.releaseDate?`&year=${m.releaseDate.slice(0,4)}`:'';
     const r=await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${S.keys.tmdb}&query=${encodeURIComponent(m.title)}${y}`);
@@ -898,8 +975,9 @@ async function tmdbMovieMeta(m){
       rating:d.vote_average?+d.vote_average.toFixed(1):null,
       genres:(d.genres||[]).map(g=>g.name).slice(0,3),
       overview:(d.overview||'').slice(0,420),runtime:d.runtime||null,
-      date:d.release_date||'',trailer:tr?tr.key:'',tmdbId:hit.id,
-      cast:(d.credits?.cast||[]).slice(0,14).map(c=>({n:c.name||'',c:c.character||'',img:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''})),
+      date:d.release_date||'',trailer:tr?tr.key:'',tmdbId:hit.id,cv:2,
+      cast:(d.credits?.cast||[]).slice(0,14).map(c=>({n:c.name||'',c:c.character||'',pid:c.id,img:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''})),
+      dir:dirList(d.credits?.crew),
       prov:provPick(d['watch/providers']||{results:{}})};
     if(meta.prov.length)S.prov['m'+m.id]=meta.prov;
     S.tmdbMeta[m.title]=meta;
@@ -913,7 +991,8 @@ function vMovie(id){
   const m=S.movies[id];
   if(!m)return'<div class="empty">Movie not found.</div>';
   const meta=S.tmdbMeta[m.title];
-  if(meta===undefined&&S.keys.tmdb){tmdbMovieMeta(m).then(()=>render(false))}
+  if(S.keys.tmdb&&(meta===undefined||(meta&&meta.cv!==2))&&!_metaTried.has(m.title)){
+    _metaTried.add(m.title);tmdbMovieMeta(m).then(()=>render(false))}
   const r=S.movieRatings[m.title];
   const up=m.releaseDate&&m.releaseDate>=_today();
   const art=meta?.backdrop||meta?.poster||S.tmdbPosters[m.title];
@@ -940,6 +1019,7 @@ function vMovie(id){
     ${meta?.trailer?`<a class="cta sub" style="margin-top:10px" href="https://www.youtube.com/watch?v=${meta.trailer}" target="_blank" rel="noopener">▶ Watch trailer</a>`:''}
     ${meta?.overview?`<div class="set" style="margin-top:16px"><h3>About</h3><p>${esc(meta.overview)}</p></div>`:''}
     ${castRow(meta?.cast)}
+    ${dirRow(meta?.dir)}
     ${!S.keys.tmdb?'<div class="set" style="margin-top:16px"><p>Add a free TMDB key in Settings to load poster, rating, genres and synopsis here.</p></div>':''}
     <button class="btn danger" style="width:100%;margin-top:16px" onclick="rmMovie('${id.replace(/'/g,"\\'")}')">Remove from library</button>
   </div>`;
@@ -1160,9 +1240,103 @@ async function loadPreview(type,id){
     genres:(d.genres||[]).map(g=>normGenre(g.name)).slice(0,3),
     overview:(d.overview||'').slice(0,420),
     trailer:tr?tr.key:'',
-    cast:(d.credits?.cast||[]).slice(0,14).map(c=>({n:c.name||'',c:c.character||'',img:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''}))
+    cast:(d.credits?.cast||[]).slice(0,14).map(c=>({n:c.name||'',c:c.character||'',pid:c.id,img:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''})),
+    dir:type==='movie'?dirList(d.credits?.crew):[]
   };
   return prevCache[k];
+}
+let personCache={},bioOpen=false,moreOpen={};
+// TV genre ids for talk shows / news / reality — these flood an actor's credit list
+const JUNK_TV=[10767,10763,10764];
+function credList(arr,job){
+  const seen=new Set(),out=[];
+  for(const c of (arr||[])){
+    if(c.media_type!=='movie'&&c.media_type!=='tv')continue;
+    if(job&&c.job!==job)continue;
+    if(seen.has(c.media_type+c.id))continue;
+    if(!job&&/^self\b/i.test(c.character||''))continue;
+    if(c.media_type==='tv'&&(c.genre_ids||[]).some(g=>JUNK_TV.includes(g)))continue;
+    const t=c.media_type==='tv'?(c.name||''):(c.title||'');
+    if(!t)continue;
+    seen.add(c.media_type+c.id);
+    out.push({id:c.id,type:c.media_type,t,
+      y:((c.media_type==='tv'?c.first_air_date:c.release_date)||'').slice(0,4),
+      sub:job?job:(c.character||''),pop:c.popularity||0,
+      img:c.poster_path?`https://image.tmdb.org/t/p/w185${c.poster_path}`:''});
+  }
+  return out.sort((a,b)=>b.pop-a.pop);
+}
+async function loadPerson(pid){
+  if(personCache[pid])return personCache[pid];
+  const d=await tmdbFetch(`/person/${pid}?append_to_response=combined_credits,external_ids`);
+  const x=d.external_ids||{};
+  personCache[pid]={
+    name:d.name||'',
+    img:d.profile_path?`https://image.tmdb.org/t/p/w342${d.profile_path}`:'',
+    bio:(d.biography||'').trim(),
+    born:d.birthday||'',died:d.deathday||'',place:d.place_of_birth||'',
+    known:d.known_for_department||'',
+    ig:x.instagram_id||'',tw:x.twitter_id||'',imdb:x.imdb_id||'',
+    acting:credList(d.combined_credits?.cast),
+    directed:credList(d.combined_credits?.crew,'Director')
+  };
+  return personCache[pid];
+}
+function ageFrom(born,died){
+  if(!born)return null;
+  const b=new Date(born),e=died?new Date(died):new Date();
+  if(isNaN(b))return null;
+  let a=e.getFullYear()-b.getFullYear();
+  const m=e.getMonth()-b.getMonth();
+  if(m<0||(m===0&&e.getDate()<b.getDate()))a--;
+  return a>=0&&a<130?a:null;
+}
+const CRED_SHOWN=12;
+function credSection(title,list,key){
+  if(!list.length)return'';
+  const open=moreOpen[key],shown=open?list:list.slice(0,CRED_SHOWN);
+  return `<div class="sec" style="margin-top:18px"><h2>${title}</h2><span class="all">${list.length}</span></div>
+  ${shown.map(c=>`<a class="crd" href="#/preview/${c.type}/${c.id}">
+    <div class="cp">${c.img?`<img loading="lazy" src="${c.img}">`:(c.type==='tv'?'📺':'🎬')}</div>
+    <div class="ct"><b>${esc(c.t)}</b><span>${esc(c.sub||(c.type==='tv'?'TV':'Film'))}</span></div>
+    <span class="cy">${c.y||''}</span></a>`).join('')}
+  ${!open&&list.length>CRED_SHOWN?`<button class="cta sub" onclick="moreOpen['${key}']=true;render(false)">Show ${list.length-CRED_SHOWN} more</button>`:''}`;
+}
+function vPerson(pid,mode){
+  const p=personCache[pid];
+  if(!p){
+    loadPerson(pid).then(()=>render(false))
+      .catch(()=>{$('#app').innerHTML='<div class="empty">Could not load this person.</div>'});
+    return'<div class="empty">Loading…</div>';
+  }
+  const age=ageFrom(p.born,p.died);
+  const facts=[
+    p.born?`Born ${fmtDate(p.born)}${age!=null&&!p.died?` · ${age}`:''}`:'',
+    p.died?`Died ${fmtDate(p.died)}${age!=null?` · aged ${age}`:''}`:'',
+    p.place||''
+  ].filter(Boolean).map(f=>`<div>${esc(f)}</div>`).join('');
+  const soc=[
+    p.ig?`<a href="https://instagram.com/${p.ig}" target="_blank" rel="noopener">Instagram</a>`:'',
+    p.tw?`<a href="https://x.com/${p.tw}" target="_blank" rel="noopener">X</a>`:'',
+    p.imdb?`<a href="https://www.imdb.com/name/${p.imdb}/" target="_blank" rel="noopener">IMDb</a>`:''
+  ].filter(Boolean).join('');
+  const long=p.bio.length>420;
+  const bio=p.bio?`<div class="set" style="margin-top:18px"><h3>About</h3>
+    <div class="bio">${esc(bioOpen||!long?p.bio:p.bio.slice(0,420).trim()+'…')}</div>
+    ${long?`<div class="biotg" onclick="bioOpen=!bioOpen;render(false)">${bioOpen?'Show less':'Read more'}</div>`:''}</div>`:'';
+  const acting=credSection('Acting',p.acting,pid+'a');
+  const directed=credSection('Directed',p.directed,pid+'d');
+  return `<header class="hdr" style="display:flex;align-items:center;gap:10px">
+    <button class="iconbtn" onclick="history.back()">‹</button></header>
+  <div class="phdr">
+    <div class="pimg">${p.img?`<img src="${p.img}">`:'👤'}</div>
+    <div class="pmeta"><h1>${esc(p.name)}</h1>
+      <div class="pfacts">${facts||'<div>No details on file.</div>'}</div>
+      ${soc?`<div class="soc">${soc}</div>`:''}</div>
+  </div>
+  ${bio}
+  ${mode==='d'?directed+acting:acting+directed}
+  ${!p.acting.length&&!p.directed.length?'<div class="empty">No credits listed.</div>':''}`;
 }
 function vPreview(type,id){
   const p=prevCache[type+id];
@@ -1190,6 +1364,7 @@ function vPreview(type,id){
     ${p.trailer?`<a class="cta sub" style="margin-top:10px" href="https://www.youtube.com/watch?v=${p.trailer}" target="_blank" rel="noopener">▶ Watch trailer</a>`:''}
     ${p.overview?`<div class="set" style="margin-top:16px"><h3>About</h3><p>${esc(p.overview)}</p></div>`:''}
     ${castRow(p.cast)}
+    ${dirRow(p.dir)}
   </div>`;
 }
 window.prevAdd=async(type,id)=>{
@@ -1253,13 +1428,19 @@ async function render(scroll=true){
   if(r==='show'){app.innerHTML=await vShow(arg)}
   else if(r==='movie'){app.innerHTML=vMovie(decodeURIComponent(arg||''))}
   else if(r==='preview'){const [t,pid]=arg.split('/');app.innerHTML=vPreview(t,+pid)}
+  else if(r==='person'){const [pid,mode]=arg.split('/');app.innerHTML=vPerson(+pid,mode||'')}
   else if(r==='list'||r==='shows'||r==='movies'){app.innerHTML=vList()}
   else if(r==='search'){app.innerHTML=vSearch()}
   else if(r==='gear'){app.innerHTML=vSettings();bindDrop()}
   else{app.innerHTML=vHome()}
   if(scroll)window.scrollTo(0,0);
 }
-window.addEventListener('hashchange',()=>{if(route().r==='show')openSeason=null;render()});
+window.addEventListener('hashchange',()=>{
+  const r=route().r;
+  if(r==='show')openSeason=null;
+  castOpen=false; if(r==='person')bioOpen=false;
+  render();
+});
 
 function bindDrop(){
   const dz=$('#dz');if(!dz)return;
@@ -1282,7 +1463,7 @@ function handleFile(f){
   }
   S.loaded=Object.keys(S.shows).length>0;
   if(!S.loaded)location.hash='#/gear';
-  else if(!['show','movie','preview'].includes(route().r))location.hash='#/home';
+  else if(!['show','movie','preview','person'].includes(route().r))location.hash='#/home';
   await render();
   document.addEventListener('touchstart',()=>{},{passive:true});
   if(S.loaded){backgroundMatch();if(S.keys.tmdb){tmdbMatch();setTimeout(providerMatch,4000)}}
