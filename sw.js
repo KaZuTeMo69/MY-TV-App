@@ -1,6 +1,6 @@
 /* Watchlog service worker: lets the installed app open without internet.
    Bump VERSION on every release (same number as APP_VERSION / ?v= in index.html). */
-const VERSION='3.1';
+const VERSION='3.2';
 const SHELL='watchlog-shell';   // the app's own files + the CDN libraries and font
 const IMG='watchlog-img';       // posters and stills, capped at IMG_MAX entries
 const IMG_MAX=400;
@@ -26,6 +26,7 @@ self.addEventListener('message',e=>{
     for(const u of urls){
       const url=new URL(u);
       if(url.origin!==location.origin&&!CDN_HOSTS.includes(url.hostname))continue;
+      if(url.searchParams.has('check'))continue;
       if(await c.match(u))continue;
       try{const r=await fetch(u,{mode:url.origin===location.origin?'same-origin':'cors',credentials:'omit'});if(r.ok)await c.put(u,r)}catch(err){}
     }
@@ -58,6 +59,8 @@ self.addEventListener('fetch',e=>{
   const req=e.request;
   if(req.method!=='GET')return;
   const url=new URL(req.url);
+  // update checks (index.html?check=…) must reach GitHub, never a cached copy, and are never stored
+  if(req.cache==='no-store'||url.searchParams.has('check'))return;
   // the page itself: always try the network first so updates arrive, fall back offline
   if(req.mode==='navigate'){
     e.respondWith((async()=>{
