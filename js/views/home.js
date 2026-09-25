@@ -26,7 +26,7 @@ function vHome(){
     const tot=tv?.eps?tv.eps.filter(e=>!epFuture(e)).length:0;
     const wl=S.keys.tmdb?watchList('s'+s.id):null,w0=wl?.items[0],wu=w0&&watchUrl(w0.n,s.title,wl.link);
     return `<a class="hcard" href="#/show/${s.id}">
-      ${wu?`<button class="hwatch" onclick="event.preventDefault();event.stopPropagation();window.open(${jsa(wu)},'_blank','noopener')" aria-label="Watch on ${esc(w0.n)}">${w0.l?`<img src="${esc(w0.l)}" alt="">`:''}▶</button>`:''}
+      ${wu?`<button class="hwatch" onclick="event.preventDefault();event.stopPropagation();copyTitle(${jsa(s.title)});window.open(${jsa(wu)},'_blank','noopener')" aria-label="Watch on ${esc(w0.n)}">${w0.l?`<img src="${esc(w0.l)}" alt="">`:''}▶</button>`:''}
       ${tv?.img?`<img loading="lazy" src="${tv.imgBig||tv.img}">`:`<div class="ph">${esc(s.title)}</div>`}
       <div class="ov"><div class="t">${esc(s.title)}</div>
       <div class="nx">${nw?`<span style="color:var(--green);font-weight:700">NEW</span> · S${nw.s} E${nw.e} · aired ${agoDays(nw.air)}`:nx?`next · S${nx.s} E${nx.e}`:(up?`new ep ${fmtDate(up.air)}`:tot?'':'&nbsp;')}</div>

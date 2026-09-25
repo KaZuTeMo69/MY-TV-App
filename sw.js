@@ -1,6 +1,6 @@
 /* Watchlog service worker: lets the installed app open without internet.
    Bump VERSION on every release (same number as APP_VERSION / ?v= in index.html). */
-const VERSION='3.0';
+const VERSION='3.1';
 const SHELL='watchlog-shell';   // the app's own files + the CDN libraries and font
 const IMG='watchlog-img';       // posters and stills, capped at IMG_MAX entries
 const IMG_MAX=400;
