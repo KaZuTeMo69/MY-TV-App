@@ -16,6 +16,7 @@ async function render(scroll=true){
   else if(r==='list'||r==='shows'||r==='movies'){app.innerHTML=vList()}
   else if(r==='search'){app.innerHTML=vSearch()}
   else if(r==='gear'){app.innerHTML=vSettings();bindDrop()}
+  else if(r==='stats'){app.innerHTML=vStats()}
   else{app.innerHTML=vHome()}
   if(scroll)window.scrollTo(0,0);
 }

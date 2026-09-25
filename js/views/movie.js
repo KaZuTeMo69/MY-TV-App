@@ -21,7 +21,7 @@ function vMovie(id){
   const chips=[
     up?`<span class="pill amber">releases ${fmtDate(m.releaseDate)}</span>`:'',
     meta?.rating?`<span class="pill gold">★ ${meta.rating}</span>`:'',
-    r!=null?`<span class="pill gold">you: ${r}</span>`:'',
+    r!=null?`<span class="pill gold">you: ${starTxt(r)}</span>`:'',
     (meta?.date||m.releaseDate)?`<span class="pill">${(meta?.date||m.releaseDate).slice(0,4)}</span>`:'',
     (meta?.runtime||m.runtime)?`<span class="pill">${fmtMin(meta?.runtime||m.runtime)}</span>`:'',
     m.rewatch?`<span class="pill">watched ×${m.rewatch+1}</span>`:'',
@@ -38,7 +38,8 @@ function vMovie(id){
     ${m.status==='watched'
       ?`<button class="cta sub" onclick="tgMovie(${jsa(id)})">Watched ${m.watchDate?fmtDate(m.watchDate):''} ✓ · tap to undo</button>
         <button class="cta sub" style="margin-top:10px" onclick="rewatchMovie(${jsa(id)})">↻ Watched it again</button>
-        ${(m.history||[]).length?`<p class="hist">Earlier: ${m.history.map(d=>fmtDate(d)).join(' · ')}</p>`:''}`
+        ${(m.history||[]).length?`<p class="hist">Earlier: ${m.history.map(d=>fmtDate(d)).join(' · ')}</p>`:''}
+        <div class="myrate"><span>Your rating</span><div class="stars">${[1,2,3,4,5].map(n=>`<button class="${r>=n?'on':''}" onclick="rateMovie(${jsa(id)},${n})" aria-label="${n} star${n>1?'s':''}">★</button>`).join('')}</div></div>`
       :`<button class="cta" onclick="tgMovie(${jsa(id)})">Mark as watched</button>`}
     ${meta?.trailer?`<a class="cta sub" style="margin-top:10px" href="https://www.youtube.com/watch?v=${meta.trailer}" target="_blank" rel="noopener">▶ Watch trailer</a>`:''}
     ${meta?watchBlock('m'+m.id,m.title):''}
@@ -71,4 +72,10 @@ window.rewatchMovie=async id=>{
   if(m.watchDate)(m.history=m.history||[]).push(m.watchDate);
   m.watchDate=_today();m.rewatch=(m.rewatch||0)+1;
   await saveOne('movies');toast(`Watched ×${m.rewatch+1} ✓`);render(false);
+};
+// tapping the current star value again clears the rating
+window.rateMovie=async(id,n)=>{
+  const m=S.movies[id];if(!m)return;
+  if(S.movieRatings[m.title]===n)delete S.movieRatings[m.title];else S.movieRatings[m.title]=n;
+  await saveOne('movieRatings');render(false);
 };

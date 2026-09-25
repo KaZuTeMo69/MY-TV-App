@@ -7,6 +7,7 @@ async function vShow(id){
   if(tv){ensureEpisodes(id).then(fresh=>fresh&&render(false))}
   if(tv&&tv.trailer===undefined&&S.keys.tmdb){tvTrailer(id)}
   if(tv&&tv.castv!==2&&!_castTried.has(id)){_castTried.add(id);showCast(id)}
+  const rmap=epRatingMap(id);
   const w=S.watched[id]||{},wc=Object.keys(w).length;
   const eps=tv?.eps||[],aired=eps.filter(e=>!epFuture(e)),tot=aired.length;
   const nx=nextEp(id);
@@ -55,6 +56,7 @@ async function vShow(id){
               :'<div class=\'th-ph\'>▭</div>'}</div>
             <span class="num">E${e.e}</span><span class="nm">${esc(e.name)||''}</span>
             ${ww&&ww.n>1?`<span class="rw">×${ww.n}</span>`:''}
+            ${ww?`<button class="erate ${rmap[k]!=null?'on':''}" onclick="event.stopPropagation();rateEp('${id}',${e.s},${e.e})" aria-label="Rate episode">${rmap[k]!=null?starTxt(rmap[k]):'☆'}</button>`:''}
             ${efut?`<span class="epdate">${fmtDate(e.air)}</span>`:'<span class="check">✓</span>'}</div>`}).join('')}</div>`:''}
       </div>`}).join('')||(tv?'<div class="empty">Episode list loading…</div>':'<div class="empty">No online match yet for this title.<br>Artwork and episodes appear once matching finishes.</div>')}
     ${tv?.summary?`<div class="set" style="margin-top:14px"><h3>About</h3><p>${esc(tv.summary)}…</p></div>`:''}
@@ -120,4 +122,13 @@ window.rmShow=async id=>{
   delete S.tvm['miss_'+id];delete S.prov['s'+id];
   S.epRatings=S.epRatings.filter(r=>r.show!==sh.title);
   await save();toast('Removed');go('list');
+};
+window.rateEp=(id,s,e)=>{
+  const sh=S.shows[id];if(!sh)return;
+  const cur=epRatingMap(id)[epKey(s,e)]??null;
+  openRate(`S${s} E${e}`,cur,async v=>{
+    S.epRatings=S.epRatings.filter(r=>!(r.show===sh.title&&r.s===s&&r.e===e));
+    if(v!=null)S.epRatings.push({show:sh.title,s,e,v});
+    await saveOne('epRatings');render(false);
+  });
 };

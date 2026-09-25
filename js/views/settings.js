@@ -19,14 +19,16 @@ function vSettings(){
     ${S.keys.tmdb?'':'<p style="margin-top:12px">Needs a TMDB key (below) to look up streaming services.</p>'}
   </div>
   <div class="set"><h3>Library & backup</h3>
-    <p>${nShows} shows · ${nMov} movies · artwork matched ${matched}/${nShows}</p>
+    <p>${nShows} shows · ${nMov} movies · artwork matched ${matched}/${nShows}<br>Last backup: ${lastBackupTxt()}</p>
     <div class="btnrow">
       <button class="btn gold" onclick="pickFile()">Import TV Time zip / backup JSON</button>
       <button class="btn" onclick="exportJSON()">Export backup</button>
+      <button class="btn" onclick="go('stats')">View stats</button>
       ${matching?'<button class="btn" disabled>Matching…</button>':'<button class="btn" onclick="backgroundMatch(true)">Re-run matching</button>'}
     </div>
     <div class="dropzone" id="dz" style="margin-top:12px">…or drop your <b>gdpr-data.zip</b> / backup file here</div>
   </div>
+  ${installSection()}
   <div class="set"><h3>API keys</h3>
     <p><b>TMDB</b> — posters, discovery and streaming services. Free at themoviedb.org → Settings → API. Paste the "API Key (v3 auth)".</p>
     <input placeholder="TMDB API key" value="${esc(S.keys.tmdb)}" onchange="setKey('tmdb',this.value)">

@@ -95,10 +95,30 @@ async function importJSON(file){
   await applyImport({shows:j.shows,watched:j.watched||{},movies:j.movies||{},epRatings:j.epRatings||[],
     movieRatings:j.movieRatings||{},tvm:j.tvm,prefs:j.prefs},'Loaded');
 }
-function exportJSON(){
+async function exportJSON(){
+  const name=`watchlog-backup-${_today()}.json`;
   const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),
     shows:S.shows,watched:S.watched,movies:S.movies,epRatings:S.epRatings,movieRatings:S.movieRatings,tvm:S.tvm,prefs:S.prefs})],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`watchlog-backup-${_today()}.json`;a.click();
-  toast('Backup downloaded');
+  // the installed app on iPhone can't download files, so offer the share sheet (Save to Files) there
+  const file=typeof File==='function'?new File([blob],name,{type:'application/json'}):null;
+  if(isInstalled()&&file&&navigator.canShare?.({files:[file]})){
+    try{await navigator.share({files:[file],title:'Watchlog backup'})}
+    catch(e){if(e.name==='AbortError')return;toast('Could not share the backup');return}
+  }else{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  }
+  S.prefs.lastBackup=_today();S.prefs.backupSnooze='';await saveOne('prefs');
+  toast('Backup saved');render(false);
 }
+// Home shows a reminder when the last backup is 14+ days old (or never), unless snoozed
+const BACKUP_EVERY=14;
+function backupDue(){
+  if(!Object.keys(S.shows).length&&!Object.keys(S.movies).length)return false;
+  if(S.prefs.backupSnooze&&daysTo(S.prefs.backupSnooze)>0)return false;
+  return !S.prefs.lastBackup||-daysTo(S.prefs.lastBackup)>=BACKUP_EVERY;
+}
+const lastBackupTxt=()=>S.prefs.lastBackup?agoDays(S.prefs.lastBackup):'never';
+window.snoozeBackup=async()=>{
+  const d=new Date();d.setDate(d.getDate()+3);
+  S.prefs.backupSnooze=_ymd(d);await saveOne('prefs');render(false);
+};

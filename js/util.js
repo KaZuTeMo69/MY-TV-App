@@ -80,3 +80,27 @@ function fmtDate(ds){if(!ds)return'';const d=parseDay(String(ds).slice(0,10));if
   if(days>=0&&days<=7)return inDays(days);
   const s=`${MON[d.getMonth()]} ${d.getDate()}`;
   return d.getFullYear()===new Date().getFullYear()?s:`${s} ${d.getFullYear()}`}
+
+/* ---- your ratings (1–5 stars). Episode ratings are stored by show title, as TV Time exports them ---- */
+function epRatingMap(id){
+  const t=S.shows[id]?.title,m={};
+  S.epRatings.forEach(r=>{if(r.show===t&&r.v!=null)m[epKey(r.s,r.e)]=r.v});
+  return m;
+}
+const starTxt=v=>v==null?'':'★'+v;
+let _rateCb=null;
+// bottom sheet with 5 stars; fn(value) gets 1–5, or null for "clear"
+function openRate(title,cur,fn){
+  _rateCb=fn;
+  let el=$('#ratesheet');
+  if(!el){el=document.createElement('div');el.id='ratesheet';el.className='sheet-bg';
+    el.onclick=e=>{if(e.target===el)closeRate()};document.body.appendChild(el)}
+  el.innerHTML=`<div class="sheet" role="dialog" aria-label="Rate ${esc(title)}">
+    <div class="sheet-t">Rate ${esc(title)}</div>
+    <div class="stars big">${[1,2,3,4,5].map(n=>`<button class="${cur>=n?'on':''}" onclick="pickRate(${n})" aria-label="${n} star${n>1?'s':''}">★</button>`).join('')}</div>
+    <div class="btnrow" style="justify-content:center">${cur!=null?'<button class="btn" onclick="pickRate(null)">Clear rating</button>':''}
+      <button class="btn" onclick="closeRate()">Cancel</button></div></div>`;
+  el.classList.add('show');
+}
+window.closeRate=()=>{const el=$('#ratesheet');if(el)el.classList.remove('show');_rateCb=null};
+window.pickRate=v=>{const f=_rateCb;closeRate();if(f)f(v)};

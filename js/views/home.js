@@ -33,7 +33,9 @@ function vHome(){
       ${tot?`<div class="bar"><i style="width:${Math.min(100,wc/tot*100)}%"></i></div>`:''}</div></a>`;
   }).join('');
   return `<header class="hdr"><div><div class="hi">Hello,</div><div class="name" onclick="${S.prefs.name?'':"go('gear')"}">${S.prefs.name?esc(S.prefs.name):'there'}</div></div>
-    <div class="badge">${nNew?`<b style="color:var(--green)">${nNew} new</b> · `:''}<b>${eps}</b> eps · <b>${mv}</b> films</div></header>
+    <div class="badge link" onclick="go('stats')" role="button" aria-label="Open stats">${nNew?`<b style="color:var(--green)">${nNew} new</b> · `:''}<b>${eps}</b> eps · <b>${mv}</b> films ›</div></header>
+  ${backupDue()?`<div class="nudge"><span>💾 Last backup: <b>${lastBackupTxt()}</b>. Your data lives only on this device.</span>
+    <button class="btn gold" onclick="exportJSON()">Back up</button><button class="btn" onclick="snoozeBackup()">Later</button></div>`:''}
   <div class="sec"><h2>Watch next</h2><span class="all" onclick="go('list')">See all</span></div>
   ${hero?`<div class="hero">${hero}</div>`:'<div class="empty"><div class="big">◌</div>Nothing to watch right now.<br>Import data in Settings, or add shows via Search.</div>'}
   ${upcoming.length?`<div class="sec"><h2>Upcoming</h2></div>
