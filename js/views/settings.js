@@ -18,6 +18,7 @@ function vSettings(){
     <div class="svc">${[...found].filter(Boolean).sort().map(n=>`<button class="chip ${myServices().includes(n)?'on':''}" onclick="tgService(${jsa(n)})">${myServices().includes(n)?'✓ ':''}${esc(n)}</button>`).join('')}</div>
     ${S.keys.tmdb?'':'<p style="margin-top:12px">Needs a TMDB key (below) to look up streaming services.</p>'}
   </div>
+  ${watchLinksSection([...found].filter(Boolean))}
   <div class="set"><h3>Library & backup</h3>
     <p>${nShows} shows · ${nMov} movies · artwork matched ${matched}/${nShows}<br>Last backup: ${lastBackupTxt()}</p>
     <div class="btnrow">
@@ -56,3 +57,16 @@ window.wipe=async()=>{
   await new Promise(res=>{const r=indexedDB.deleteDatabase('watchlog');r.onsuccess=r.onerror=r.onblocked=res});
   location.reload();
 };
+// per-service choice of link, with a Test button to try it on this phone
+function watchLinksSection(services){
+  const mine=myServices(),list=[...new Set([...mine,...services])].filter(Boolean)
+    .sort((x,y)=>mine.includes(y)-mine.includes(x)||x.localeCompare(y));
+  if(!list.length)return'';
+  return `<div class="set"><h3>Watch links</h3>
+    <p>Choose what each "Where to watch" button opens. Tap <b>Test</b> to check it opens the app on this phone; if it opens a web page instead, try another option.</p>
+    ${list.map(n=>{const cur=watchPick(n),test=cur[0]==='tmdb'?'https://www.themoviedb.org/tv/1396/watch':(cur[2](encodeURIComponent('Breaking Bad')));
+      return `<div class="lnk"><span>${esc(n)}</span>
+        <select onchange="setLinkPick(${jsa(n)},this.value)">${watchOpts(n).map(o=>`<option value="${o[0]}" ${o[0]===cur[0]?'selected':''}>${esc(o[1])}</option>`).join('')}</select>
+        <a class="btn" href="${esc(test)}" target="_blank" rel="noopener" onclick="copyTitle('Breaking Bad')">Test</a></div>`}).join('')}
+  </div>`;
+}

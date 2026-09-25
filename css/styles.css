@@ -241,3 +241,7 @@ img{display:block}
 .rank-bar i{display:block;height:100%;background:var(--gold);border-radius:3px}
 .nudge{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--gold-dim);border-radius:var(--r-sm);padding:12px 14px;margin:0 0 14px;font-size:12.5px;color:var(--tx2)}
 .nudge span{flex:1;min-width:160px}
+.lnk{display:flex;align-items:center;gap:8px;margin-top:10px}
+.lnk span{flex:0 0 92px;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lnk select{flex:1;min-width:0;padding:10px;border-radius:12px;background:var(--card2);border:1px solid #3a3128;color:var(--tx);font-size:16px}
+.lnk .btn{flex:0 0 auto;padding:10px 12px}
