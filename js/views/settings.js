@@ -36,6 +36,10 @@ function vSettings(){
     <p style="margin-top:14px"><b>OMDb</b> — IMDb / Rotten Tomatoes scores. Free at omdbapi.com. Used in an upcoming version.</p>
     <input placeholder="OMDb API key" value="${esc(S.keys.omdb)}" onchange="setKey('omdb',this.value)">
   </div>
+  <div class="set"><h3>App version</h3>
+    <p>Watchlog <b>${window.APP_VERSION}</b>. New versions are checked automatically when the app opens; on Home you can also pull down to refresh.</p>
+    <div class="btnrow"><button class="btn" onclick="manualUpdateCheck(this)">Check for updates</button></div>
+  </div>
   <div class="set"><h3>Danger zone</h3>
     <div class="btnrow"><button class="btn danger" onclick="wipe()">Erase everything</button></div>
   </div>

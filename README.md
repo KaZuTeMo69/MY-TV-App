@@ -16,6 +16,7 @@ js/watch.js           "Where to watch" links, My services, region switch
 js/library.js         library lookups by TMDB id, adding titles
 js/import.js          TV Time zip / JSON backup import and export, backup reminder
 js/install.js         installable app: offline support and the Settings "Install app" section
+js/update.js          update checks, "Update available" banner, pull-to-refresh on Home
 js/views/*.js         one file per screen (home, list, show, movie, search, person, settings, stats)
                       plus common.js for shared cards and rows
 js/router.js          hash router and render loop
