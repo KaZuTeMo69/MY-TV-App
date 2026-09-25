@@ -248,7 +248,8 @@ img{display:block}
 .updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:98;width:calc(100% - 32px);max-width:608px;display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--gold-dim);border-radius:14px;padding:10px 10px 10px 14px;font-size:12.5px;color:var(--tx2);box-shadow:0 8px 30px rgba(0,0,0,.5)}
 .updbar span{flex:1}
 .updbar .btn{padding:9px 12px}
-.ptr{position:fixed;top:0;left:50%;z-index:97;width:40px;height:40px;border-radius:50%;background:var(--card2);border:1px solid var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0;transform:translate(-50%,-50px);pointer-events:none;transition:opacity .15s}
-.ptr.ready{background:var(--gold-soft)}
-.ptr.spin span{animation:ptrspin .8s linear infinite}
+.ptr{position:fixed;top:calc(env(safe-area-inset-top) + 0px);left:50%;z-index:97;width:40px;height:40px;border-radius:50%;background:var(--card2);border:1px solid var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;opacity:0;transform:translate(-50%,-44px);pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.ptr svg{display:block}
+.ptr.ready{background:var(--gold-soft);border-color:var(--gold)}
+.ptr.spin svg{animation:ptrspin .8s linear infinite}
 @keyframes ptrspin{to{transform:rotate(360deg)}}
